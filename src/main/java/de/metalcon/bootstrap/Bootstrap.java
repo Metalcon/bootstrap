@@ -1,10 +1,12 @@
 package de.metalcon.bootstrap;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import net.hh.request_dispatcher.Callback;
 import net.hh.request_dispatcher.Dispatcher;
+import net.hh.request_dispatcher.server.RequestException;
 import net.hh.request_dispatcher.service_adapter.ZmqAdapter;
 
 import org.zeromq.ZMQ;
@@ -19,12 +21,10 @@ import de.metalcon.bootstrap.domain.impl.Track;
 import de.metalcon.domain.Muid;
 import de.metalcon.exceptions.ServiceOverloadedException;
 import de.metalcon.sdd.api.requests.SddReadRequest;
-import de.metalcon.sdd.api.requests.SddRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
-import de.metalcon.sdd.api.responses.SddSucessfulReadResponse;
+import de.metalcon.sdd.api.responses.SddResponse;
 import de.metalcon.sdd.api.responses.SddSucessfullQueueResponse;
 import de.metalcon.urlmappingserver.api.requests.UrlMappingRegistrationRequest;
-import de.metalcon.urlmappingserver.api.requests.UrlMappingRequest;
 import de.metalcon.urlmappingserver.api.requests.UrlMappingResolveRequest;
 
 public class Bootstrap {
@@ -49,7 +49,7 @@ public class Bootstrap {
     private Map<Muid, Track> tracks = new HashMap<Muid, Track>();
 
     public static void main(String[] args) throws ServiceOverloadedException,
-            InterruptedException {
+            InterruptedException, IOException {
         context = ZMQ.context(1);
 
         Bootstrap bootstrap = new Bootstrap();
@@ -59,7 +59,8 @@ public class Bootstrap {
         context.close();
     }
 
-    private void run() throws ServiceOverloadedException, InterruptedException {
+    private void run() throws ServiceOverloadedException, InterruptedException,
+            IOException {
         dispatcher = new Dispatcher();
         registerAdapters(dispatcher);
 
@@ -69,57 +70,35 @@ public class Bootstrap {
             band.fillSddWriteRequest(sddWriteRequest);
             registerUrl(band);
         }
-        //        for (Record record : records.values()) {
-        //            record.fillSddWriteRequest(sddWriteRequest);
-        //            registerUrl(record);
-        //        }
-        //        for (Track track : tracks.values()) {
-        //            track.fillSddWriteRequest(sddWriteRequest);
-        //            registerUrl(track);
-        //        }
+        for (Record record : records.values()) {
+            record.fillSddWriteRequest(sddWriteRequest);
+            registerUrl(record);
+        }
+        for (Track track : tracks.values()) {
+            track.fillSddWriteRequest(sddWriteRequest);
+            registerUrl(track);
+        }
 
-        dispatcher.execute(sddWriteRequest, new Callback<Response>() {
+        dispatcher.execute(sddWriteRequest, new Callback<SddResponse>() {
 
             @Override
-            public void onSuccess(Response response) {
+            public void onError(RequestException exception) {
+                exception.printStackTrace();
+            }
+
+            @Override
+            public void onSuccess(SddResponse response) {
                 if (response instanceof SddSucessfullQueueResponse) {
                     System.out.println("Queing data worked.");
                 } else {
-                    System.out.println("Queing data failed.");
-                    System.out.println(response.getStatusMessage());
-                    if (response instanceof ErrorResponse) {
-                        System.out.println(((ErrorResponse) response)
-                                .getErrorMessage());
-                        System.out.println(((ErrorResponse) response)
-                                .getSolution());
-                    }
+                    System.out.println("Queing data failed: "
+                            + response.getClass());
                 }
             }
 
         });
 
         dispatcher.gatherResults();
-
-        Thread.sleep(1000);
-
-        SddReadRequest r = new SddReadRequest();
-        r.read(bands.keySet().iterator().next(), "page");
-        dispatcher.execute(r, new Callback<Response>() {
-
-            @Override
-            public void onSuccess(Response response) {
-                if (response instanceof SddSucessfulReadResponse) {
-                    System.out.println(((SddSucessfulReadResponse) response)
-                            .get(bands.keySet().iterator().next(), "page"));
-                } else {
-                    System.out.println("read failed");
-                }
-            }
-
-        });
-        dispatcher.gatherResults();
-
-        Thread.sleep(100);
 
         dispatcher.close();
     }
@@ -128,6 +107,11 @@ public class Bootstrap {
         UrlMappingRegistrationRequest urlRequest =
                 new UrlMappingRegistrationRequest(entity.getUrlData());
         dispatcher.execute(urlRequest, new Callback<Response>() {
+
+            @Override
+            public void onError(RequestException exception) {
+                exception.printStackTrace();
+            }
 
             @Override
             public void onSuccess(Response response) {
@@ -154,16 +138,14 @@ public class Bootstrap {
 
     private void registerAdapters(Dispatcher dispatcher) {
         // StaticDataDelivery
-        ZmqAdapter<SddRequest, Response> sddAdapter =
-                new ZmqAdapter<SddRequest, Response>(context, SDD_ENDPOINT);
+        ZmqAdapter sddAdapter = new ZmqAdapter(context, SDD_ENDPOINT);
         dispatcher.registerServiceAdapter(SDD_SERVICE, sddAdapter);
         dispatcher.setDefaultService(SddReadRequest.class, SDD_SERVICE);
         dispatcher.setDefaultService(SddWriteRequest.class, SDD_SERVICE);
 
         // UrlMapping
-        ZmqAdapter<UrlMappingRequest, Response> urlMappingAdapter =
-                new ZmqAdapter<UrlMappingRequest, Response>(context,
-                        URL_MAPPING_SERVER_ENDPOINT);
+        ZmqAdapter urlMappingAdapter =
+                new ZmqAdapter(context, URL_MAPPING_SERVER_ENDPOINT);
         dispatcher.registerServiceAdapter(URL_MAPPING_SERVICE,
                 urlMappingAdapter);
         dispatcher.setDefaultService(UrlMappingResolveRequest.class,
