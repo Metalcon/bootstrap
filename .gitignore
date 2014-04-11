@@ -18,3 +18,5 @@ bin/
 
 # backup files
 *~
+
+config.sh
