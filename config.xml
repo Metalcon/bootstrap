@@ -7,6 +7,9 @@
   <details>
     <detail name="entry"/>
     <detail name="page"/>
+    <detail name="tabBands"/>
+    <detail name="tabRecords"/>
+    <detail name="tabTracks"/>
   </details>
   
   <nodes>
@@ -22,6 +25,14 @@
       <output detail="page">
         <out-property property="name"/>
         <out-relation relation="records" detail="entry"/>
+        <out-relation relation="tracks" detail="entry"/>
+      </output>
+      
+      <output detail="tabRecords">
+        <out-relation relation="records" detail="entry"/>
+      </output>
+      
+      <output detail="tabTracks">
         <out-relation relation="tracks" detail="entry"/>
       </output>
     </node>
@@ -41,6 +52,10 @@
         <out-property property="name"/>
         <out-property property="releaseYear"/>
         <out-relation relation="band" detail="entry"/>
+        <out-relation relation="tracks" detail="entry"/>
+      </output>
+      
+      <output detail="tabTracks">
         <out-relation relation="tracks" detail="entry"/>
       </output>
     </node>

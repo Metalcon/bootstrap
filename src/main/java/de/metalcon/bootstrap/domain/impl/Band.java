@@ -57,8 +57,8 @@ public class Band extends Entity {
 
         request.setProperties(getMuid(), properties);
         request.setRelations(getMuid(), "records", new LinkedList<Muid>());
-        //        request.setRelations(getMuid(), "records", recordMuids);
-        //        request.setRelations(getMuid(), "tracks", trackMuids);
+        request.setRelations(getMuid(), "records", recordMuids);
+        request.setRelations(getMuid(), "tracks", trackMuids);
     }
 
     @Override
