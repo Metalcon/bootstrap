@@ -17,8 +17,7 @@ public class BandCsvParser extends CsvParser<Band> {
     @Override
     protected List<Band> parse() throws IOException {
         List<Band> bands = new LinkedList<Band>();
-        String entry;
-        String line;
+        String[] band;
 
         long legacyId;
         String name;
@@ -26,24 +25,31 @@ public class BandCsvParser extends CsvParser<Band> {
         String urlMySpace;
 
         reader.readLine();
-        while ((line = reader.readLine()) != null) {
-            entry = "";
-            while (!line.endsWith("EODBE")) {
-                entry += line;
-                line = reader.readLine();
-            }
-            entry += line;
-            String[] values = entry.split("##!!##!!");
+        while ((band = getEntry()) != null) {
 
-            legacyId = Long.valueOf(values[0]);
-            name = values[1];
-            // skip key
-            photoId = Long.valueOf(values[3]);
-            urlMySpace = values[4];
-
-            while (line.endsWith("\\")) {
-                line = reader.readLine();
-            }
+            // [0] ID
+            legacyId = Long.valueOf(band[0]);
+            // [1] Name
+            name = band[1];
+            // [2] Key
+            // [3] Photo_ID
+            photoId = Long.valueOf(band[3]);
+            // [4] MyspaceURL*
+            urlMySpace = readSafely(band[4]);
+            // [5] WebsiteURL*
+            // [6] Description*
+            // [7] City_ID*
+            // [8] Active
+            // [9] MaintainerUser_ID*
+            // [10]LastUpdatedUser_ID*
+            // [11]ContactFirstName*
+            // [12]ContactLastName*
+            // [13]ContactMail*
+            // [14]Date
+            // [15]RecordLabel_ID*
+            // [16]UserEditingTime*
+            // [17]Logo_ID*
+            // [18]UserCount
 
             bands.add(new Band(legacyId, name, photoId, urlMySpace));
         }

@@ -18,24 +18,28 @@ public class BandAlbumCsvParser extends CsvParser<Entry<Long, Long>> {
     @Override
     protected List<Entry<Long, Long>> parse() throws IOException {
         Map<Long, Long> bandAlbums = new HashMap<Long, Long>();
-        String line;
+        String[] relation;
 
         Long bandId;
         Long recordId;
 
         reader.readLine();
-        while ((line = reader.readLine()) != null) {
-            line = line.substring(0, line.length() - 5);
-            String[] values = line.split("##!!##!!");
+        while ((relation = getEntry()) != null) {
+            // [0] ID
+            // [1] Band_ID
+            bandId = Long.valueOf(relation[1]);
+            // [2] Album_ID
+            recordId = Long.valueOf(relation[2]);
 
-            // skip id
-            bandId = Long.valueOf(values[1]);
-            recordId = Long.valueOf(values[2]);
-
+            if (bandId == 0) {
+                throw new IllegalStateException(
+                        "collision: band ID \"0\" in use by a band");
+            }
             if (!bandAlbums.containsKey(recordId)) {
                 bandAlbums.put(recordId, bandId);
             } else {
-                // FIXME set parental record to NULL 
+                // multiple parents -> set parental record to NULL 
+                bandAlbums.put(recordId, 0L);
             }
         }
 

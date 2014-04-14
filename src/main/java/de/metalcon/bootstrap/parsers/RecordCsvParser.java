@@ -22,10 +22,9 @@ public class RecordCsvParser extends CsvParser<Record> {
     }
 
     @Override
-    protected List<Record> parse() throws IOException {
+    protected List<Record> parse() throws IOException, ParseException {
         List<Record> records = new LinkedList<Record>();
-        String entry;
-        String line;
+        String[] record;
 
         long legacyId;
         String name;
@@ -34,30 +33,40 @@ public class RecordCsvParser extends CsvParser<Record> {
         int numFans;
 
         reader.readLine();
-        while ((line = reader.readLine()) != null) {
-            entry = "";
-            while (!line.endsWith("EODBE")) {
-                entry += line;
-                line = reader.readLine();
-            }
-            entry += line.substring(0, line.length() - 5);
-            String[] values = entry.split("##!!##!!");
-
-            legacyId = Long.valueOf(values[0]);
-            name = values[1];
-            try {
-                if (!"\\N".equals(values[2])) {
-                    releaseDate = DATE_FORMATTER.parse(values[2]);
-                } else {
-                    releaseDate = null;
-                }
-            } catch (ParseException e) {
-                e.printStackTrace();
+        while ((record = getEntry()) != null) {
+            // [0] ID
+            legacyId = Long.valueOf(record[0]);
+            // [1] Name
+            name = record[1];
+            // [2] Date*
+            if (!isNull(record[2])) {
+                releaseDate = DATE_FORMATTER.parse(record[2]);
+            } else {
                 releaseDate = null;
             }
+            // [3] GTIN*
+            // [4] CoverImage_ID
+            coverId = Long.valueOf(record[4]);
+            // [5] WebshopURL*
+            // [6] RecordLabel_ID*
+            // [7] EntryDate
+            // [8] MaintainerUser_ID*
+            // [9] LastUpdatedUser_ID*
+            // [10]NBArtikelnummer*
+            // [11]Key
+            // [12]RatingsGood*
+            // [13]AverageRating
+            // [14]NumberOfRatings
+            // [15]RatingsBad*
+            // [16]UserEditingTime*
+            // [17]MusicalStyle_ID*
+            // [18]UserCount
+            numFans = Integer.valueOf(record[18]);
+            // [19]OnIndex
+            // [20]AlbumType_ID
+            // [21]AlbumEdition_ID
+            // [22]AlbumEditionDescription*
             // skip GTIN
-            coverId = Long.valueOf(values[4]);
-            numFans = Integer.valueOf(values[values.length - 5]);
 
             records.add(new Record(legacyId, name, releaseDate, coverId,
                     numFans));

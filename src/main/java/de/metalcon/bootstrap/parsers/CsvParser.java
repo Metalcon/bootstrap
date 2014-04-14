@@ -19,19 +19,46 @@ public abstract class CsvParser<T > implements Iterable<T> {
         items = null;
     }
 
-    abstract protected List<T> parse() throws IOException;
+    abstract protected List<T> parse() throws Exception;
 
     @Override
     public Iterator<T> iterator() {
         if (items == null) {
             try {
                 items = parse();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
         }
         return items.iterator();
+    }
+
+    protected String[] getEntry() throws IOException {
+        String line = reader.readLine();
+        if (line == null) {
+            return null;
+        }
+
+        // read until end of database entry
+        String entry = "";
+        while (!line.endsWith("EODBE")) {
+            entry += line;
+            line = reader.readLine();
+        }
+        entry += line;
+        entry = entry.substring(0, entry.length() - 5);
+
+        // split into table rows
+        return entry.split("##!!##!!");
+    }
+
+    protected static boolean isNull(String value) {
+        return "\\N".equals(value);
+    }
+
+    protected static String readSafely(String value) {
+        return (!isNull(value)) ? value : null;
     }
 
 }

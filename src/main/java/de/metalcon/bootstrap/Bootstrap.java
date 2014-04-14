@@ -179,11 +179,21 @@ public class Bootstrap {
             band = bands.get(relation.getValue());
             record = records.get(relation.getKey());
 
-            if (record != null) {
-                band.addRecord(record);
-                linked.add(record.getLegacyId());
-                //            System.out.println(band.getMuid() + " -> " + record.getMuid());
+            if (record == null) {
+                // sick records waiting for the eXecuT0r
+                continue;
             }
+
+            if (band != null) {
+                // record has parental band
+                band.addRecord(record);
+                //            System.out.println(band.getMuid() + " -> " + record.getMuid());
+            } else {
+                // joint venture
+                record.setBand(null);
+                //                System.out.println("_ -> " + record.getMuid());
+            }
+            linked.add(record.getLegacyId());
         }
         System.out.println(linked.size() + " records linked");
 
