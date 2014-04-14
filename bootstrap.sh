@@ -1,2 +1,5 @@
-mvn compile
-mvn exec:java -Dexec.mainClass="de.metalcon.bootstrap.Bootstrap"
+# start services
+./runAll.sh
+
+# import data
+mvn clean exec:java
