@@ -8,12 +8,16 @@ import java.util.Map;
 import de.metalcon.bootstrap.domain.Entity;
 import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
-import de.metalcon.exceptions.ServiceOverloadedException;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
+import de.metalcon.testing.MuidFactory;
 import de.metalcon.urlmappingserver.api.requests.registration.BandUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.EntityUrlData;
 
 public class Band extends Entity {
+
+    protected long photoId;
+
+    protected String urlMySpace;
 
     private List<Record> records = new LinkedList<Record>();
 
@@ -21,8 +25,20 @@ public class Band extends Entity {
 
     public Band(
             long legacyId,
-            String name) throws ServiceOverloadedException {
-        super(legacyId, Muid.create(UidType.BAND), name);
+            String name,
+            long photoId,
+            String urlMySpace) {
+        super(legacyId, MuidFactory.generateMuid(UidType.BAND), name);
+        this.photoId = photoId;
+        this.urlMySpace = urlMySpace;
+    }
+
+    public long getPhotoId() {
+        return photoId;
+    }
+
+    public String getUrlMySpace() {
+        return urlMySpace;
     }
 
     public List<Record> getRecords() {
@@ -46,6 +62,7 @@ public class Band extends Entity {
     public void fillSddWriteRequest(SddWriteRequest request) {
         Map<String, String> properties = new HashMap<String, String>();
         properties.put("name", getName());
+        properties.put("urlMySpace", getUrlMySpace());
 
         List<Muid> recordMuids = new LinkedList<Muid>();
         for (Record record : records) {
@@ -58,7 +75,6 @@ public class Band extends Entity {
         }
 
         request.setProperties(getMuid(), properties);
-        request.setRelations(getMuid(), "records", new LinkedList<Muid>());
         request.setRelations(getMuid(), "records", recordMuids);
         request.setRelations(getMuid(), "tracks", trackMuids);
     }

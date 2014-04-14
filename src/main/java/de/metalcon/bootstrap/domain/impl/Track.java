@@ -4,21 +4,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 import de.metalcon.bootstrap.domain.Entity;
-import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
-import de.metalcon.exceptions.ServiceOverloadedException;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
+import de.metalcon.testing.MuidFactory;
 import de.metalcon.urlmappingserver.api.requests.registration.EntityUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.RecordUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.TrackUrlData;
 
 public class Track extends Entity {
 
-    protected long bandId;
-
-    protected String recordName;
-
     private int trackNumber;
+
+    private int duration;
 
     private Band band;
 
@@ -26,26 +23,12 @@ public class Track extends Entity {
 
     public Track(
             long legacyId,
-            long bandId,
-            String recordName,
             String name,
-            int trackNumber) throws ServiceOverloadedException {
-        super(legacyId, Muid.create(UidType.TRACK), name);
-        this.bandId = bandId;
-        this.recordName = recordName;
+            int trackNumber,
+            int duration) {
+        super(legacyId, MuidFactory.generateMuid(UidType.TRACK), name);
         this.trackNumber = trackNumber;
-    }
-
-    public long getBandId() {
-        return bandId;
-    }
-
-    public String getRecordName() {
-        return recordName;
-    }
-
-    public int getTrackNumber() {
-        return trackNumber;
+        this.duration = duration;
     }
 
     public Band getBand() {
@@ -68,7 +51,8 @@ public class Track extends Entity {
     public void fillSddWriteRequest(SddWriteRequest request) {
         Map<String, String> properties = new HashMap<String, String>();
         properties.put("name", getName());
-        properties.put("trackNumber", String.valueOf(getTrackNumber()));
+        properties.put("trackNumber", String.valueOf(trackNumber));
+        properties.put("duration", String.valueOf(duration));
 
         request.setProperties(getMuid(), properties);
         request.setRelation(getMuid(), "band", band.getMuid());
@@ -78,6 +62,6 @@ public class Track extends Entity {
     @Override
     public EntityUrlData getUrlData() {
         return new TrackUrlData(getMuid(), getName(), null,
-                (RecordUrlData) getRecord().getUrlData(), getTrackNumber());
+                (RecordUrlData) getRecord().getUrlData(), trackNumber);
     }
 }

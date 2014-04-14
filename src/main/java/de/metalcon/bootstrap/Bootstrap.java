@@ -1,23 +1,26 @@
 package de.metalcon.bootstrap;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import net.hh.request_dispatcher.Callback;
 import net.hh.request_dispatcher.Dispatcher;
 import net.hh.request_dispatcher.RequestException;
-
-import org.zeromq.ZMQ;
-
 import de.metalcon.api.responses.Response;
 import de.metalcon.api.responses.SuccessResponse;
 import de.metalcon.api.responses.errors.ErrorResponse;
 import de.metalcon.bootstrap.domain.Entity;
-import de.metalcon.bootstrap.domain.Image;
 import de.metalcon.bootstrap.domain.impl.Band;
 import de.metalcon.bootstrap.domain.impl.Record;
 import de.metalcon.bootstrap.domain.impl.Track;
+import de.metalcon.bootstrap.parsers.BandAlbumCsvParser;
+import de.metalcon.bootstrap.parsers.BandCsvParser;
+import de.metalcon.bootstrap.parsers.RecordCsvParser;
 import de.metalcon.exceptions.ServiceOverloadedException;
 import de.metalcon.sdd.api.requests.SddReadRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
@@ -37,29 +40,21 @@ public class Bootstrap {
     public static final String URL_MAPPING_SERVER_ENDPOINT =
             "tcp://127.0.0.1:12666";
 
-    private static ZMQ.Context context;
-
     private Dispatcher dispatcher;
 
     private Map<Long, Band> bands = new HashMap<Long, Band>();
 
     private Map<Long, Record> records = new HashMap<Long, Record>();
 
-    private Map<String, Long> recordIds = new HashMap<String, Long>();
-
     private Map<Long, Track> tracks = new HashMap<Long, Track>();
 
-    private Map<Long, Image> images = new HashMap<Long, Image>();
+    //    private Map<Long, Image> images = new HashMap<Long, Image>();
 
     public static void main(String[] args) throws ServiceOverloadedException,
             InterruptedException, IOException {
-        context = ZMQ.context(1);
-
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.load();
-        bootstrap.run();
-
-        context.close();
+        //        bootstrap.run();
     }
 
     private void run() throws ServiceOverloadedException, InterruptedException,
@@ -150,39 +145,63 @@ public class Bootstrap {
                 URL_MAPPING_SERVER_ENDPOINT);
     }
 
-    private void load() throws ServiceOverloadedException {
+    private void load() throws ServiceOverloadedException,
+            FileNotFoundException {
         // load bands
-        BandCsvParser bandParser = new BandCsvParser("bands.csv");
+
+        BandCsvParser bandParser =
+                new BandCsvParser("src/main/resources/Band.csv");
         for (Band band : bandParser) {
             bands.put(band.getLegacyId(), band);
+            //            System.out.println("b[" + band.getLegacyId() + "|" + band.getMuid()
+            //                    + "] " + band.getName());
         }
+        System.out.println(bands.size() + " bands imported");
 
         // load records
-        Band parent;
-        RecordCsvParser recordParser = new RecordCsvParser("records.csv");
+        RecordCsvParser recordParser =
+                new RecordCsvParser("src/main/resources/Album.csv");
         for (Record record : recordParser) {
             records.put(record.getLegacyId(), record);
-            recordIds.put(record.getName(), record.getLegacyId());
-
-            parent = bands.get(record.getBandId());
-            parent.addRecord(record);
+            //            System.out.println("r[" + record.getLegacyId() + "|"
+            //                    + record.getMuid() + "]" + record.getName());
         }
+        System.out.println(records.size() + " records imported");
+
+        Set<Long> linked = new LinkedHashSet<Long>();
+
+        // link records to band
+        Band band;
+        Record record;
+        BandAlbumCsvParser bandRecordParser =
+                new BandAlbumCsvParser("src/main/resources/BandAlbum.csv");
+        for (Entry<Long, Long> relation : bandRecordParser) {
+            band = bands.get(relation.getValue());
+            record = records.get(relation.getKey());
+
+            if (record != null) {
+                band.addRecord(record);
+                linked.add(record.getLegacyId());
+                //            System.out.println(band.getMuid() + " -> " + record.getMuid());
+            }
+        }
+        System.out.println(linked.size() + " records linked");
 
         // load tracks
-        Record parentRecord;
-        TrackCsvParser trackParser = new TrackCsvParser("tracks.csv");
-        for (Track track : trackParser) {
-            tracks.put(track.getLegacyId(), track);
-
-            parentRecord = records.get(recordIds.get(track.getRecordName()));
-            parentRecord.addTrack(track);
-        }
+        //        Record parentRecord;
+        //        TrackCsvParser trackParser = new TrackCsvParser("tracks.csv");
+        //        for (Track track : trackParser) {
+        //            tracks.put(track.getLegacyId(), track);
+        //
+        //            parentRecord = records.get(recordIds.get(track.getRecordName()));
+        //            parentRecord.addTrack(track);
+        //        }
 
         // load images
-        ImageCsvParser imageParser = new ImageCsvParser("images.csv");
-        for (Image image : imageParser) {
-            images.put(image.getLegacyId(), image);
-        }
+        //        ImageCsvParser imageParser = new ImageCsvParser("images.csv");
+        //        for (Image image : imageParser) {
+        //            images.put(image.getLegacyId(), image);
+        //        }
     }
 
 }

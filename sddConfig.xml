@@ -15,6 +15,7 @@
   <nodes>
     <node type="band">
       <property name="name" type="String"/>
+      <property name="urlMySpace" type="String"/>
       <relation name="records" type="record[]"/>
       <relation name="tracks" type="track[]"/>
 
@@ -39,7 +40,7 @@
 
     <node type="record">
       <property name="name" type="String"/>
-      <property name="releaseYear" type="String"/>
+      <property name="releaseDate" type="String"/>
       <relation name="band" type="band"/>
       <relation name="tracks" type="track[]"/>
 
@@ -63,6 +64,7 @@
     <node type="track">
       <property name="name" type="String"/>
       <property name="trackNumber" type="String"/>
+      <property name="duration" type="String"/>
       <relation name="band" type="band"/>
       <relation name="record" type="record"/>
 

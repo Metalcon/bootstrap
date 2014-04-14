@@ -14,7 +14,7 @@
   <version>0.0.3</version>
   <packaging>jar</packaging>
 
-  <name>staticDataDelivery</name>
+  <name>bootstrap</name>
 
   <developers>
     <developer>
@@ -46,13 +46,8 @@
     </dependency>
     <dependency>
       <groupId>de.metalcon</groupId>
-      <artifactId>muid</artifactId>
-      <version>${metalcon.muid.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>de.metalcon</groupId>
-      <artifactId>backend-api</artifactId>
-      <version>${metalcon.backendApi.version}</version>
+      <artifactId>testing</artifactId>
+      <version>${metalcon.testing.version}</version>
     </dependency>
     <dependency>
       <groupId>de.metalcon</groupId>
