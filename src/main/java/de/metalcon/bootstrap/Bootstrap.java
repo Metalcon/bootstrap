@@ -6,8 +6,7 @@ import java.util.Map;
 
 import net.hh.request_dispatcher.Callback;
 import net.hh.request_dispatcher.Dispatcher;
-import net.hh.request_dispatcher.server.RequestException;
-import net.hh.request_dispatcher.service_adapter.ZmqAdapter;
+import net.hh.request_dispatcher.RequestException;
 
 import org.zeromq.ZMQ;
 
@@ -20,12 +19,12 @@ import de.metalcon.bootstrap.domain.impl.Record;
 import de.metalcon.bootstrap.domain.impl.Track;
 import de.metalcon.domain.Muid;
 import de.metalcon.exceptions.ServiceOverloadedException;
-import de.metalcon.sdd.api.requests.SddReadRequest;
+import de.metalcon.sdd.api.requests.SddRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
 import de.metalcon.sdd.api.responses.SddResponse;
 import de.metalcon.sdd.api.responses.SddSucessfullQueueResponse;
-import de.metalcon.urlmappingserver.api.requests.UrlMappingRegistrationRequest;
-import de.metalcon.urlmappingserver.api.requests.UrlMappingResolveRequest;
+import de.metalcon.urlmappingserver.api.requests.UrlMappingRequest;
+import de.metalcon.urlmappingserver.api.requests.UrlRegistrationRequest;
 
 public class Bootstrap {
 
@@ -100,12 +99,12 @@ public class Bootstrap {
 
         dispatcher.gatherResults();
 
-        dispatcher.close();
+        dispatcher.shutdown();
     }
 
     private void registerUrl(final Entity entity) {
-        UrlMappingRegistrationRequest urlRequest =
-                new UrlMappingRegistrationRequest(entity.getUrlData());
+        UrlRegistrationRequest urlRequest =
+                new UrlRegistrationRequest(entity.getUrlData());
         dispatcher.execute(urlRequest, new Callback<Response>() {
 
             @Override
@@ -138,20 +137,25 @@ public class Bootstrap {
 
     private void registerAdapters(Dispatcher dispatcher) {
         // StaticDataDelivery
-        ZmqAdapter sddAdapter = new ZmqAdapter(context, SDD_ENDPOINT);
-        dispatcher.registerServiceAdapter(SDD_SERVICE, sddAdapter);
-        dispatcher.setDefaultService(SddReadRequest.class, SDD_SERVICE);
-        dispatcher.setDefaultService(SddWriteRequest.class, SDD_SERVICE);
+        System.out.println("Register SddRequest");
+        dispatcher.registerService(SddRequest.class, SDD_ENDPOINT);
+        //        ZmqAdapter sddAdapter = new ZmqAdapter(context, SDD_ENDPOINT);
+        //        dispatcher.registerServiceAdapter(SDD_SERVICE, sddAdapter);
+        //        dispatcher.setDefaultService(SddReadRequest.class, SDD_SERVICE);
+        //        dispatcher.setDefaultService(SddWriteRequest.class, SDD_SERVICE);
 
         // UrlMapping
-        ZmqAdapter urlMappingAdapter =
-                new ZmqAdapter(context, URL_MAPPING_SERVER_ENDPOINT);
-        dispatcher.registerServiceAdapter(URL_MAPPING_SERVICE,
-                urlMappingAdapter);
-        dispatcher.setDefaultService(UrlMappingResolveRequest.class,
-                URL_MAPPING_SERVICE);
-        dispatcher.setDefaultService(UrlMappingRegistrationRequest.class,
-                URL_MAPPING_SERVICE);
+        System.out.println("Register UrlMappingRequest");
+        dispatcher.registerService(UrlMappingRequest.class,
+                URL_MAPPING_SERVER_ENDPOINT);
+        //        ZmqAdapter urlMappingAdapter =
+        //                new ZmqAdapter(context, URL_MAPPING_SERVER_ENDPOINT);
+        //        dispatcher.registerServiceAdapter(URL_MAPPING_SERVICE,
+        //                urlMappingAdapter);
+        //        dispatcher.setDefaultService(UrlMappingResolveRequest.class,
+        //                URL_MAPPING_SERVICE);
+        //        dispatcher.setDefaultService(UrlMappingRegistrationRequest.class,
+        //                URL_MAPPING_SERVICE);
     }
 
     private void load() throws ServiceOverloadedException {
