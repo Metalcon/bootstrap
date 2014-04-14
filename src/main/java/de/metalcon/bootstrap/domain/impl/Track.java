@@ -14,6 +14,10 @@ import de.metalcon.urlmappingserver.api.requests.registration.TrackUrlData;
 
 public class Track extends Entity {
 
+    protected long bandId;
+
+    protected String recordName;
+
     private int trackNumber;
 
     private Band band;
@@ -21,14 +25,23 @@ public class Track extends Entity {
     private Record record;
 
     public Track(
+            long legacyId,
+            long bandId,
+            String recordName,
             String name,
-            int trackNumber,
-            Band band,
-            Record record) throws ServiceOverloadedException {
-        super(Muid.create(UidType.TRACK), name);
+            int trackNumber) throws ServiceOverloadedException {
+        super(legacyId, Muid.create(UidType.TRACK), name);
+        this.bandId = bandId;
+        this.recordName = recordName;
         this.trackNumber = trackNumber;
-        this.band = band;
-        this.record = record;
+    }
+
+    public long getBandId() {
+        return bandId;
+    }
+
+    public String getRecordName() {
+        return recordName;
     }
 
     public int getTrackNumber() {
@@ -39,8 +52,16 @@ public class Track extends Entity {
         return band;
     }
 
+    public void setBand(Band band) {
+        this.band = band;
+    }
+
     public Record getRecord() {
         return record;
+    }
+
+    public void setRecord(Record record) {
+        this.record = record;
     }
 
     @Override

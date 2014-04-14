@@ -1,4 +1,4 @@
 source config.sh
 
 cd $UMS_PATH
-mvn clean exec:java -Dexec.args="$UMS_CONFIG/config.txt"
+mvn clean compile exec:java -Dexec.args="$UMS_CONFIG/config.txt"

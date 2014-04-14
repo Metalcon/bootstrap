@@ -3,10 +3,10 @@ source config.sh
 # open services in new terminals
 if [ $SDD_ENABLED ]
 then
-  gnome-terminal -x ./runSdd.sh
+  ./runSdd.sh &
 fi
 
 if [ $UMS_ENABLED ]
 then
-  gnome terminal -x ./runUms.sh
+  ./runUms.sh &
 fi

@@ -16,6 +16,8 @@ import de.metalcon.urlmappingserver.api.requests.registration.RecordUrlData;
 
 public class Record extends Entity {
 
+    protected long bandId;
+
     private int releaseYear;
 
     private Band band;
@@ -23,12 +25,17 @@ public class Record extends Entity {
     private List<Track> tracks = new LinkedList<Track>();
 
     public Record(
+            long legacyId,
+            long bandId,
             String name,
-            int releaseYear,
-            Band band) throws ServiceOverloadedException {
-        super(Muid.create(UidType.RECORD), name);
+            int releaseYear) throws ServiceOverloadedException {
+        super(legacyId, Muid.create(UidType.RECORD), name);
+        this.bandId = bandId;
         this.releaseYear = releaseYear;
-        this.band = band;
+    }
+
+    public long getBandId() {
+        return bandId;
     }
 
     public int getReleaseYear() {
@@ -39,12 +46,18 @@ public class Record extends Entity {
         return band;
     }
 
+    public void setBand(Band band) {
+        this.band = band;
+    }
+
     public List<Track> getTracks() {
         return tracks;
     }
 
     public void addTrack(Track track) {
         tracks.add(track);
+        track.setBand(getBand());
+        track.setRecord(this);
     }
 
     @Override

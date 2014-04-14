@@ -20,8 +20,9 @@ public class Band extends Entity {
     private List<Track> tracks = new LinkedList<Track>();
 
     public Band(
+            long legacyId,
             String name) throws ServiceOverloadedException {
-        super(Muid.create(UidType.BAND), name);
+        super(legacyId, Muid.create(UidType.BAND), name);
     }
 
     public List<Record> getRecords() {
@@ -30,6 +31,7 @@ public class Band extends Entity {
 
     public void addRecord(Record record) {
         records.add(record);
+        record.setBand(this);
     }
 
     public List<Track> getTracks() {
