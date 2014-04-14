@@ -180,7 +180,7 @@ public class Bootstrap {
             record = records.get(relation.getKey());
 
             if (record == null) {
-                // sick records waiting for the eXecuT0r
+                // sick relations waiting for the eXecuT0r
                 continue;
             }
 
@@ -196,6 +196,14 @@ public class Bootstrap {
             linked.add(record.getLegacyId());
         }
         System.out.println(linked.size() + " records linked");
+
+        // remove unused records
+        for (Long recordId : records.keySet()) {
+            if (!linked.contains(recordId)) {
+                // sick records waiting for the eXecuT0r
+                records.remove(recordId);
+            }
+        }
 
         // load tracks
         //        Record parentRecord;
