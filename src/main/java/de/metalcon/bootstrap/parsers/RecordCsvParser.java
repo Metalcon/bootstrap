@@ -66,7 +66,6 @@ public class RecordCsvParser extends CsvParser<Record> {
             // [20]AlbumType_ID
             // [21]AlbumEdition_ID
             // [22]AlbumEditionDescription*
-            // skip GTIN
 
             records.add(new Record(legacyId, name, releaseDate, coverId,
                     numFans));
