@@ -5,7 +5,7 @@
   <parent>
     <groupId>de.metalcon</groupId>
     <artifactId>pom</artifactId>
-    <version>0.0.7</version>
+    <version>0.0.9</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
@@ -33,7 +33,7 @@
       <url>http://develop.metalcon.de:8080/mvn/</url>
     </repository>
   </repositories>
-
+  
   <properties>
     <java.exec.launcherClass>de.metalcon.bootstrap.Bootstrap</java.exec.launcherClass>
   </properties>
@@ -48,6 +48,11 @@
       <groupId>de.metalcon</groupId>
       <artifactId>testing</artifactId>
       <version>${metalcon.testing.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>de.metalcon</groupId>
+      <artifactId>muid</artifactId>
+      <version>${metalcon.muid.version}</version>
     </dependency>
     <dependency>
       <groupId>de.metalcon</groupId>

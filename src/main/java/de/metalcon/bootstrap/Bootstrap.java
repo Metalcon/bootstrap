@@ -27,11 +27,11 @@ import de.metalcon.bootstrap.parsers.DiscCsvParser;
 import de.metalcon.bootstrap.parsers.RecordCsvParser;
 import de.metalcon.bootstrap.parsers.TrackCsvParser;
 import de.metalcon.exceptions.ServiceOverloadedException;
-import de.metalcon.sdd.api.requests.SddReadRequest;
+import de.metalcon.sdd.api.requests.SddRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
 import de.metalcon.sdd.api.responses.SddResponse;
 import de.metalcon.sdd.api.responses.SddSucessfullQueueResponse;
-import de.metalcon.urlmappingserver.api.requests.ResolveUrlRequest;
+import de.metalcon.urlmappingserver.api.requests.UrlMappingRequest;
 import de.metalcon.urlmappingserver.api.requests.UrlRegistrationRequest;
 
 public class Bootstrap {
@@ -72,6 +72,7 @@ public class Bootstrap {
         SddWriteRequest sddWriteRequest = new SddWriteRequest();
 
         for (Band band : bands.values()) {
+            System.out.println("adding band \"" + band.getName() + "\"");
             band.fillSddWriteRequest(sddWriteRequest);
             registerUrl(band);
         }
@@ -84,6 +85,7 @@ public class Bootstrap {
         //            registerUrl(track);
         //        }
 
+        System.out.println("request sent to SDD");
         dispatcher.execute(sddWriteRequest, new Callback<SddResponse>() {
 
             @Override
@@ -142,13 +144,10 @@ public class Bootstrap {
 
     private void registerAdapters(Dispatcher dispatcher) {
         // StaticDataDelivery
-        dispatcher.registerService(SddReadRequest.class, SDD_ENDPOINT);
-        dispatcher.registerService(SddWriteRequest.class, SDD_ENDPOINT);
+        dispatcher.registerService(SddRequest.class, SDD_ENDPOINT);
 
         // UrlMapping
-        dispatcher.registerService(ResolveUrlRequest.class,
-                URL_MAPPING_SERVER_ENDPOINT);
-        dispatcher.registerService(UrlRegistrationRequest.class,
+        dispatcher.registerService(UrlMappingRequest.class,
                 URL_MAPPING_SERVER_ENDPOINT);
     }
 
@@ -182,6 +181,7 @@ public class Bootstrap {
 
         // append filter
         cutToNumEntities(numEntities);
+        System.out.println("cutted down to " + bands.size() + " bands");
     }
 
     protected void removeUnusedRecords(Set<Long> unusedRecords) {

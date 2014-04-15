@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # (re-)install and start services
 ./installServices.sh
 ./runAll.sh
