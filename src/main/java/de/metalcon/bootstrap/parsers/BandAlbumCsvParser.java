@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class BandAlbumCsvParser extends CsvParser<Entry<Long, Long>> {
+public class BandAlbumCsvParser extends CsvParser<Entry<Long, List<Long>>> {
 
     public BandAlbumCsvParser(
             String filePath) throws FileNotFoundException {
@@ -16,9 +16,10 @@ public class BandAlbumCsvParser extends CsvParser<Entry<Long, Long>> {
     }
 
     @Override
-    protected List<Entry<Long, Long>> parse() throws IOException {
-        Map<Long, Long> bandAlbums = new HashMap<Long, Long>();
+    protected List<Entry<Long, List<Long>>> parse() throws IOException {
+        Map<Long, List<Long>> bandAlbums = new HashMap<Long, List<Long>>();
         String[] relation;
+        List<Long> parents;
 
         Long bandId;
         Long recordId;
@@ -35,14 +36,15 @@ public class BandAlbumCsvParser extends CsvParser<Entry<Long, Long>> {
                 throw new IllegalStateException(
                         "collision: band ID \"0\" in use by a band");
             }
-            if (!bandAlbums.containsKey(recordId)) {
-                bandAlbums.put(recordId, bandId);
-            } else {
-                // multiple parents -> set parental record to NULL 
-                bandAlbums.put(recordId, 0L);
+
+            parents = bandAlbums.get(recordId);
+            if (parents == null) {
+                parents = new LinkedList<Long>();
+                bandAlbums.put(recordId, parents);
             }
+            parents.add(bandId);
         }
 
-        return new LinkedList<Entry<Long, Long>>(bandAlbums.entrySet());
+        return new LinkedList<Entry<Long, List<Long>>>(bandAlbums.entrySet());
     }
 }

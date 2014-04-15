@@ -47,15 +47,13 @@ public class Bootstrap {
 
     private Dispatcher dispatcher;
 
-    private Map<Long, Band> bands = new HashMap<Long, Band>();
+    private Map<Long, Band> bands;
 
-    private Map<Long, Record> records = new HashMap<Long, Record>();
+    private Map<Long, Record> records;
 
-    private Map<Long, Track> tracks = new HashMap<Long, Track>();
+    private Map<Long, Track> tracks;
 
-    private Map<Long, Disc> discs = new HashMap<Long, Disc>();
-
-    //    private Map<Long, Image> images = new HashMap<Long, Image>();
+    private Map<Long, Disc> discs;
 
     public static void main(String[] args) throws ServiceOverloadedException,
             InterruptedException, IOException {
@@ -71,25 +69,38 @@ public class Bootstrap {
 
         SddWriteRequest sddWriteRequest = new SddWriteRequest();
 
+        // FIXME make sure to send 1000 requests only
+        Band testy = bands.get(377L);
+        System.out.println("Testy: \"" + testy.getName() + "\"");
         for (Band band : bands.values()) {
-            System.out.println("adding band \"" + band.getName() + "\"");
-            band.fillSddWriteRequest(sddWriteRequest);
             registerUrl(band);
+            band.fillSddWriteRequest(sddWriteRequest);
+            importToStaticData(sddWriteRequest);
         }
-        for (Record record : records.values()) {
-            if (record.getBand() != null) {
-                record.fillSddWriteRequest(sddWriteRequest);
-                registerUrl(record);
-            }
-            // FIXME
-        }
-        //        for (Track track : tracks.values()) {
-        //            track.fillSddWriteRequest(sddWriteRequest);
-        //            registerUrl(track);
-        //        }
+        dispatcher.gatherResults(1000);
 
-        System.out.println("request sent to SDD");
-        dispatcher.execute(sddWriteRequest, new Callback<SddResponse>() {
+        for (Record record : records.values()) {
+            record.fillSddWriteRequest(sddWriteRequest);
+            registerUrl(record);
+            importToStaticData(sddWriteRequest);
+
+            if (record.getBands().contains(testy)) {
+                System.out.println("record: \"" + record.getName() + "\"");
+            }
+        }
+        dispatcher.gatherResults(1000);
+        for (Track track : tracks.values()) {
+            track.fillSddWriteRequest(sddWriteRequest);
+            registerUrl(track);
+        }
+        dispatcher.gatherResults(2000);
+
+        System.out.println("done.");
+        dispatcher.shutdown();
+    }
+
+    protected void importToStaticData(SddWriteRequest request) {
+        dispatcher.execute(request, new Callback<SddResponse>() {
 
             @Override
             public void onError(RequestException exception) {
@@ -99,7 +110,7 @@ public class Bootstrap {
             @Override
             public void onSuccess(SddResponse response) {
                 if (response instanceof SddSucessfullQueueResponse) {
-                    System.out.println("Queing data worked.");
+                    //                    System.out.println("import successfully done");
                 } else {
                     System.out.println("Queing data failed: "
                             + response.getClass());
@@ -107,9 +118,6 @@ public class Bootstrap {
             }
 
         });
-
-        dispatcher.gatherResults();
-        dispatcher.shutdown();
     }
 
     private void registerUrl(final Entity entity) {
@@ -120,9 +128,9 @@ public class Bootstrap {
             @Override
             public void onSuccess(Response response) {
                 if (response instanceof SuccessResponse) {
-                    System.out.println("Url registration worked. ("
-                            + entity.getClass().getSimpleName() + ":"
-                            + entity.getName() + ")");
+                    //                    System.out.println("Url registration worked. ("
+                    //                            + entity.getClass().getSimpleName() + ":"
+                    //                            + entity.getName() + ")");
                 } else {
                     System.out.println("Url registration failed. ("
                             + entity.getClass().getSimpleName() + ":"
@@ -140,6 +148,11 @@ public class Bootstrap {
             @Override
             public void onError(RequestException e) {
                 e.printStackTrace();
+            }
+
+            @Override
+            public void onTimeout() {
+                System.err.println("request timed out");
             }
 
         });
@@ -166,7 +179,7 @@ public class Bootstrap {
         records = loadRecords(csvDir + "Album.csv");
         System.out.println(records.size() + " records imported");
 
-        // link records to band
+        // link records to bands
         Set<Long> unusedRecords =
                 linkRecords(csvDir + "BandAlbum.csv", bands, records);
 
@@ -181,6 +194,13 @@ public class Bootstrap {
         // load discs
         discs = loadDiscs(csvDir + "Disc.csv");
         System.out.println(discs.size() + " discs imported");
+
+        // link tracks to records
+        Set<Long> unusedTracks = linkTracks(bands, records, discs, tracks);
+
+        // remove unused tracks
+        removeUnusedTracks(unusedTracks);
+        System.out.println(tracks.size() + " tracks linked");
 
         // append filter
         cutToNumEntities(numEntities);
@@ -199,6 +219,18 @@ public class Bootstrap {
             //                    + "\" trashed");
         }
         //        unusedRecords.clear();
+    }
+
+    protected void removeUnusedTracks(Set<Long> unusedTracks) {
+        Track track;
+        for (Long trackId : unusedTracks) {
+            track = tracks.get(trackId);
+            tracks.remove(trackId);
+            //            System.out
+            //                    .println("t[" + track.getLegacyId() + "|" + track.getMuid()
+            //                            + "] \"" + track.getName() + "\" trashed");
+        }
+        //        unusedTracks.clear();
     }
 
     protected void cutToNumEntities(int numEntities) {
@@ -278,27 +310,55 @@ public class Bootstrap {
         Record record;
         Set<Long> unusedRecords = new LinkedHashSet<Long>(records.keySet());
         BandAlbumCsvParser bandRecordParser = new BandAlbumCsvParser(filePath);
-        for (Entry<Long, Long> relation : bandRecordParser) {
-            band = bands.get(relation.getValue());
+        for (Entry<Long, List<Long>> relation : bandRecordParser) {
             record = records.get(relation.getKey());
-
             if (record == null) {
                 // sick relations waiting for the eXecuT0r
                 continue;
             }
 
-            if (band != null) {
-                // record has parental band
+            for (Long bandId : relation.getValue()) {
+                // add parental band
+                band = bands.get(bandId);
+                if (band == null) {
+                    throw new IllegalStateException("band null: " + bandId);
+                }
+
                 band.addRecord(record);
-                //            System.out.println(band.getMuid() + " -> " + record.getMuid());
-            } else {
-                // joint venture
-                record.setBand(null);
-                //                System.out.println("_ -> " + record.getMuid());
+                //              System.out.println(band.getMuid() + " -> " + record.getMuid());
             }
+
             unusedRecords.remove(record.getLegacyId());
         }
         return unusedRecords;
+    }
+
+    protected static Set<Long> linkTracks(
+            Map<Long, Band> bands,
+            Map<Long, Record> records,
+            Map<Long, Disc> discs,
+            Map<Long, Track> tracks) {
+        Record record;
+        Disc disc;
+        Track track;
+        Set<Long> unusedTracks = new LinkedHashSet<Long>(tracks.keySet());
+        for (Long trackId : tracks.keySet()) {
+            track = tracks.get(trackId);
+            disc = discs.get(track.getDiscId());
+
+            record = records.get(disc.getRecordId());
+            if (record == null) {
+                continue;
+            }
+
+            record.addTrack(track);
+            for (Band band : record.getBands()) {
+                band.addTrack(track);
+            }
+
+            unusedTracks.remove(trackId);
+        }
+        return unusedTracks;
     }
 
 }
