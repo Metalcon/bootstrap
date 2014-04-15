@@ -65,7 +65,6 @@ public class Record extends Entity {
 
     public void addTrack(Track track) {
         tracks.add(track);
-        track.setBand(getBand());
         track.setRecord(this);
     }
 
