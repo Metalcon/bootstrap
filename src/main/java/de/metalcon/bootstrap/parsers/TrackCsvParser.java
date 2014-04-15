@@ -33,7 +33,11 @@ public class TrackCsvParser extends CsvParser<Track> {
             // [2] Title
             trackName = track[2];
             // [3] Duration*
-            duration = Integer.valueOf(track[3]);
+            if (!isNull(track[3])) {
+                duration = Integer.valueOf(track[3]);
+            } else {
+                duration = 0;
+            }
             // [4] Disc_ID
             // [5] Band_ID*
 

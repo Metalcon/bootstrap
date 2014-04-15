@@ -4,6 +4,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -21,6 +23,7 @@ import de.metalcon.bootstrap.domain.impl.Track;
 import de.metalcon.bootstrap.parsers.BandAlbumCsvParser;
 import de.metalcon.bootstrap.parsers.BandCsvParser;
 import de.metalcon.bootstrap.parsers.RecordCsvParser;
+import de.metalcon.bootstrap.parsers.TrackCsvParser;
 import de.metalcon.exceptions.ServiceOverloadedException;
 import de.metalcon.sdd.api.requests.SddReadRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
@@ -147,32 +150,20 @@ public class Bootstrap {
 
     private void load() throws ServiceOverloadedException,
             FileNotFoundException {
-        // load bands
+        String csvDir = "src/main/resources/";
 
-        BandCsvParser bandParser =
-                new BandCsvParser("src/main/resources/Band.csv");
-        for (Band band : bandParser) {
-            bands.put(band.getLegacyId(), band);
-            //            System.out.println("b[" + band.getLegacyId() + "|" + band.getMuid()
-            //                    + "] " + band.getName());
-        }
+        // load bands
+        bands = loadBands(csvDir + "Band.csv");
         System.out.println(bands.size() + " bands imported");
 
         // load records
-        RecordCsvParser recordParser =
-                new RecordCsvParser("src/main/resources/Album.csv");
-        for (Record record : recordParser) {
-            records.put(record.getLegacyId(), record);
-            //            System.out.println("r[" + record.getLegacyId() + "|"
-            //                    + record.getMuid() + "]" + record.getName());
-        }
+        records = loadRecords(csvDir + "Album.csv");
         System.out.println(records.size() + " records imported");
-
-        Set<Long> linked = new LinkedHashSet<Long>();
 
         // link records to band
         Band band;
         Record record;
+        Set<Long> linked = new LinkedHashSet<Long>();
         BandAlbumCsvParser bandRecordParser =
                 new BandAlbumCsvParser("src/main/resources/BandAlbum.csv");
         for (Entry<Long, Long> relation : bandRecordParser) {
@@ -184,6 +175,7 @@ public class Bootstrap {
                 continue;
             }
 
+            // FIXME set URL data properly
             if (band != null) {
                 // record has parental band
                 band.addRecord(record);
@@ -198,28 +190,64 @@ public class Bootstrap {
         System.out.println(linked.size() + " records linked");
 
         // remove unused records
+        List<Long> unusedRecords = new LinkedList<Long>();
         for (Long recordId : records.keySet()) {
             if (!linked.contains(recordId)) {
                 // sick records waiting for the eXecuT0r
-                records.remove(recordId);
+                unusedRecords.add(recordId);
             }
         }
+        for (Long recordId : unusedRecords) {
+            records.remove(recordId);
+        }
+        //        unusedRecords.clear();
 
         // load tracks
-        //        Record parentRecord;
-        //        TrackCsvParser trackParser = new TrackCsvParser("tracks.csv");
-        //        for (Track track : trackParser) {
-        //            tracks.put(track.getLegacyId(), track);
-        //
-        //            parentRecord = records.get(recordIds.get(track.getRecordName()));
-        //            parentRecord.addTrack(track);
-        //        }
+        tracks = loadTracks(csvDir + "Track.csv");
+        System.out.println(tracks.size() + " tracks imported");
 
         // load images
         //        ImageCsvParser imageParser = new ImageCsvParser("images.csv");
         //        for (Image image : imageParser) {
         //            images.put(image.getLegacyId(), image);
         //        }
+    }
+
+    protected static Map<Long, Band> loadBands(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Band> bands = new HashMap<Long, Band>();
+        BandCsvParser bandParser = new BandCsvParser(filePath);
+        for (Band band : bandParser) {
+            bands.put(band.getLegacyId(), band);
+            //            System.out.println("b[" + band.getLegacyId() + "|" + band.getMuid()
+            //                    + "] " + band.getName());
+        }
+        return bands;
+    }
+
+    protected static Map<Long, Record> loadRecords(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Record> records = new HashMap<Long, Record>();
+        RecordCsvParser recordParser = new RecordCsvParser(filePath);
+        for (Record record : recordParser) {
+            records.put(record.getLegacyId(), record);
+            //            System.out.println("r[" + record.getLegacyId() + "|"
+            //                    + record.getMuid() + "] " + record.getName());
+        }
+        return records;
+    }
+
+    protected static Map<Long, Track> loadTracks(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Track> tracks = new HashMap<Long, Track>();
+        TrackCsvParser trackParser =
+                new TrackCsvParser("src/main/resources/Track.csv");
+        for (Track track : trackParser) {
+            tracks.put(track.getLegacyId(), track);
+            //            System.out.println("t[" + track.getLegacyId() + "|"
+            //                    + track.getMuid() + "] " + track.getName());
+        }
+        return tracks;
     }
 
 }
