@@ -4,8 +4,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -163,9 +161,9 @@ public class Bootstrap {
         // link records to band
         Band band;
         Record record;
-        Set<Long> linked = new LinkedHashSet<Long>();
+        Set<Long> unusedRecords = new LinkedHashSet<Long>(records.keySet());
         BandAlbumCsvParser bandRecordParser =
-                new BandAlbumCsvParser("src/main/resources/BandAlbum.csv");
+                new BandAlbumCsvParser(csvDir + "BandAlbum.csv");
         for (Entry<Long, Long> relation : bandRecordParser) {
             band = bands.get(relation.getValue());
             record = records.get(relation.getKey());
@@ -185,32 +183,23 @@ public class Bootstrap {
                 record.setBand(null);
                 //                System.out.println("_ -> " + record.getMuid());
             }
-            linked.add(record.getLegacyId());
+            unusedRecords.remove(record.getLegacyId());
         }
-        System.out.println(linked.size() + " records linked");
 
         // remove unused records
-        List<Long> unusedRecords = new LinkedList<Long>();
-        for (Long recordId : records.keySet()) {
-            if (!linked.contains(recordId)) {
-                // sick records waiting for the eXecuT0r
-                unusedRecords.add(recordId);
-            }
-        }
         for (Long recordId : unusedRecords) {
+            record = records.get(recordId);
             records.remove(recordId);
+            System.out.println("r[" + record.getLegacyId() + "|"
+                    + record.getMuid() + "] \"" + record.getName()
+                    + "\" trashed");
         }
         //        unusedRecords.clear();
+        System.out.println(records.size() + " records linked");
 
         // load tracks
         tracks = loadTracks(csvDir + "Track.csv");
         System.out.println(tracks.size() + " tracks imported");
-
-        // load images
-        //        ImageCsvParser imageParser = new ImageCsvParser("images.csv");
-        //        for (Image image : imageParser) {
-        //            images.put(image.getLegacyId(), image);
-        //        }
     }
 
     protected static Map<Long, Band> loadBands(String filePath)
