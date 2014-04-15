@@ -76,10 +76,13 @@ public class Bootstrap {
             band.fillSddWriteRequest(sddWriteRequest);
             registerUrl(band);
         }
-        //        for (Record record : records.values()) {
-        //            record.fillSddWriteRequest(sddWriteRequest);
-        //            registerUrl(record);
-        //        }
+        for (Record record : records.values()) {
+            if (record.getBand() != null) {
+                record.fillSddWriteRequest(sddWriteRequest);
+                registerUrl(record);
+            }
+            // FIXME
+        }
         //        for (Track track : tracks.values()) {
         //            track.fillSddWriteRequest(sddWriteRequest);
         //            registerUrl(track);
@@ -181,7 +184,9 @@ public class Bootstrap {
 
         // append filter
         cutToNumEntities(numEntities);
-        System.out.println("cutted down to " + bands.size() + " bands");
+        System.out.println("cutted down to " + bands.size() + " bands,");
+        System.out.println(records.size() + " records,");
+        System.out.println(tracks.size() + " tracks");
     }
 
     protected void removeUnusedRecords(Set<Long> unusedRecords) {
@@ -282,7 +287,6 @@ public class Bootstrap {
                 continue;
             }
 
-            // FIXME set URL data properly
             if (band != null) {
                 // record has parental band
                 band.addRecord(record);

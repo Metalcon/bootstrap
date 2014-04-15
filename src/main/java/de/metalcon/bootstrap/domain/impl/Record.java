@@ -87,7 +87,9 @@ public class Record extends Entity {
     @Override
     public EntityUrlData getUrlData() {
         return new RecordUrlData(getMuid(), getName(), (BandUrlData) getBand()
-                .getUrlData(), releaseDate.getYear());
+                .getUrlData(), (releaseDate != null)
+                ? releaseDate.getYear()
+                : 0);
     }
 
 }
