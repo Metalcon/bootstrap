@@ -23,6 +23,8 @@ public class TrackCsvParser extends CsvParser<Track> {
         int trackNumber;
         String trackName;
         int duration;
+        long discId;
+        long bandId;
 
         reader.readLine();
         while ((track = getEntry()) != null) {
@@ -39,9 +41,16 @@ public class TrackCsvParser extends CsvParser<Track> {
                 duration = 0;
             }
             // [4] Disc_ID
+            discId = Long.valueOf(track[4]);
             // [5] Band_ID*
+            if (!isNull(track[5])) {
+                bandId = Long.valueOf(track[4]);
+            } else {
+                bandId = 0;
+            }
 
-            tracks.add(new Track(legacyId, trackName, trackNumber, duration));
+            tracks.add(new Track(legacyId, trackName, trackNumber, duration,
+                    discId, bandId));
         }
 
         return tracks;

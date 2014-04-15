@@ -1,5 +1,6 @@
 package de.metalcon.bootstrap.domain.impl;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -17,13 +18,15 @@ import de.metalcon.urlmappingserver.api.requests.registration.RecordUrlData;
 
 public class Record extends Entity {
 
+    protected static final Calendar CALENDAR = Calendar.getInstance();
+
     private Date releaseDate;
 
     private long coverId;
 
     private int numFans;
 
-    private Band band;
+    private List<Band> bands = new LinkedList<Band>();
 
     private List<Track> tracks = new LinkedList<Track>();
 
@@ -51,12 +54,12 @@ public class Record extends Entity {
         return coverId;
     }
 
-    public Band getBand() {
-        return band;
+    public List<Band> getBands() {
+        return bands;
     }
 
-    public void setBand(Band band) {
-        this.band = band;
+    public void addBand(Band band) {
+        bands.add(band);
     }
 
     public List<Track> getTracks() {
@@ -72,7 +75,9 @@ public class Record extends Entity {
     public void fillSddWriteRequest(SddWriteRequest request) {
         Map<String, String> properties = new HashMap<String, String>();
         properties.put("name", getName());
-        properties.put("releaseDate", String.valueOf(getReleaseDate()));
+        if (getReleaseDate() != null) {
+            properties.put("releaseDate", String.valueOf(getReleaseDate()));
+        }
 
         List<Muid> trackMuids = new LinkedList<Muid>();
         for (Track track : tracks) {
@@ -80,16 +85,25 @@ public class Record extends Entity {
         }
 
         request.setProperties(getMuid(), properties);
-        request.setRelation(getMuid(), "band", band.getMuid());
+        // TODO use multiple bands for SDD
+        request.setRelation(getMuid(), "band", bands.iterator().next()
+                .getMuid());
         request.setRelations(getMuid(), "tracks", trackMuids);
     }
 
     @Override
     public EntityUrlData getUrlData() {
-        return new RecordUrlData(getMuid(), getName(), (BandUrlData) getBand()
-                .getUrlData(), (releaseDate != null)
-                ? releaseDate.getYear()
-                : 0);
+        BandUrlData bandUrlData = null;
+        if (bands.size() == 1) {
+            bandUrlData = (BandUrlData) bands.iterator().next().getUrlData();
+        }
+        int releaseYear = 0;
+        if (releaseDate != null) {
+            CALENDAR.setTime(releaseDate);
+            releaseYear = CALENDAR.get(Calendar.YEAR);
+        }
+
+        return new RecordUrlData(getMuid(), getName(), bandUrlData, releaseYear);
     }
 
 }

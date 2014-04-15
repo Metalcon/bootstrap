@@ -17,7 +17,9 @@ public class Track extends Entity {
 
     private int duration;
 
-    private Band band;
+    private long discId;
+
+    private long bandId;
 
     private Record record;
 
@@ -25,18 +27,14 @@ public class Track extends Entity {
             long legacyId,
             String name,
             int trackNumber,
-            int duration) {
+            int duration,
+            long discId,
+            long bandId) {
         super(legacyId, MuidFactory.generateMuid(UidType.TRACK), name);
         this.trackNumber = trackNumber;
         this.duration = duration;
-    }
-
-    public Band getBand() {
-        return band;
-    }
-
-    public void setBand(Band band) {
-        this.band = band;
+        this.discId = discId;
+        this.bandId = bandId;
     }
 
     public Record getRecord() {
@@ -47,6 +45,14 @@ public class Track extends Entity {
         this.record = record;
     }
 
+    public long getDiscId() {
+        return discId;
+    }
+
+    public long getBandId() {
+        return bandId;
+    }
+
     @Override
     public void fillSddWriteRequest(SddWriteRequest request) {
         Map<String, String> properties = new HashMap<String, String>();
@@ -55,7 +61,9 @@ public class Track extends Entity {
         properties.put("duration", String.valueOf(duration));
 
         request.setProperties(getMuid(), properties);
-        request.setRelation(getMuid(), "band", band.getMuid());
+        // TODO use multiple bands
+        request.setRelation(getMuid(), "band", record.getBands().iterator()
+                .next().getMuid());
         request.setRelation(getMuid(), "record", record.getMuid());
     }
 

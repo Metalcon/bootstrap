@@ -47,7 +47,7 @@ public class Band extends Entity {
 
     public void addRecord(Record record) {
         records.add(record);
-        record.setBand(this);
+        record.addBand(this);
     }
 
     public List<Track> getTracks() {
@@ -56,14 +56,15 @@ public class Band extends Entity {
 
     public void addTrack(Track track) {
         tracks.add(track);
-        track.setBand(this);
     }
 
     @Override
     public void fillSddWriteRequest(SddWriteRequest request) {
         Map<String, String> properties = new HashMap<String, String>();
         properties.put("name", getName());
-        properties.put("urlMySpace", getUrlMySpace());
+        if (getUrlMySpace() != null) {
+            properties.put("urlMySpace", getUrlMySpace());
+        }
 
         List<Muid> recordMuids = new LinkedList<Muid>();
         for (Record record : records) {
