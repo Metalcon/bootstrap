@@ -10,6 +10,7 @@ fi
 source $configFile
 
 # install static data delivery server
+
 if $SDD_ENABLED; then
   sudo mkdir -p $SDD_CONFIG
   sudo chown -R $RIGHTS $SDD_CONFIG
