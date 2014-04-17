@@ -4,6 +4,7 @@ import java.util.Date;
 
 import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
+import de.metalcon.imageGalleryServer.api.ImageInfo;
 
 public class Image extends UidInstance {
 
@@ -45,6 +46,11 @@ public class Image extends UidInstance {
 
     public void setEntity(Muid muid) {
         entity = muid;
+    }
+
+    public ImageInfo getImageInfo() {
+        return new ImageInfo(date.getTime(), muid.getValue(), "ohno", null,
+                null);
     }
 
 }

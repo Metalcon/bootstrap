@@ -5,13 +5,13 @@
   <parent>
     <groupId>de.metalcon</groupId>
     <artifactId>pom</artifactId>
-    <version>0.0.11</version>
+    <version>0.0.13</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>bootstrap</artifactId>
-  <version>0.0.4</version>
+  <version>0.0.5</version>
   <packaging>jar</packaging>
 
   <name>bootstrap</name>
@@ -33,7 +33,7 @@
       <url>http://develop.metalcon.de:8080/mvn/</url>
     </repository>
   </repositories>
-  
+
   <properties>
     <java.exec.launcherClass>de.metalcon.bootstrap.Bootstrap</java.exec.launcherClass>
   </properties>
@@ -63,6 +63,11 @@
       <groupId>de.metalcon</groupId>
       <artifactId>url-mapping-server-api</artifactId>
       <version>${metalcon.urlMappingServer.api.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>de.metalcon</groupId>
+      <artifactId>image-gallery-server-api</artifactId>
+      <version>${metalcon.imageGalleryServer.api.version}</version>
     </dependency>
   </dependencies>
 </project>

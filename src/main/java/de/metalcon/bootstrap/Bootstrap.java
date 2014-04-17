@@ -1,7 +1,10 @@
 package de.metalcon.bootstrap;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -9,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import net.hh.request_dispatcher.Callback;
 import net.hh.request_dispatcher.Dispatcher;
@@ -19,6 +23,7 @@ import de.metalcon.api.responses.errors.ErrorResponse;
 import de.metalcon.bootstrap.domain.Disc;
 import de.metalcon.bootstrap.domain.Entity;
 import de.metalcon.bootstrap.domain.Image;
+import de.metalcon.bootstrap.domain.UrlImportable;
 import de.metalcon.bootstrap.domain.entities.Band;
 import de.metalcon.bootstrap.domain.entities.Record;
 import de.metalcon.bootstrap.domain.entities.Track;
@@ -29,6 +34,8 @@ import de.metalcon.bootstrap.parsers.ImageCsvParser;
 import de.metalcon.bootstrap.parsers.RecordCsvParser;
 import de.metalcon.bootstrap.parsers.TrackCsvParser;
 import de.metalcon.exceptions.ServiceOverloadedException;
+import de.metalcon.imageGalleryServer.api.GalleryType;
+import de.metalcon.imageGalleryServer.api.requests.CreateImageRequest;
 import de.metalcon.sdd.api.requests.SddRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
 import de.metalcon.sdd.api.responses.SddResponse;
@@ -51,6 +58,9 @@ public class Bootstrap {
     public static final String IMAGE_GALLERY_SERVICE = "galleryServer";
 
     public static final String IMAGE_GALLERY_SERVER_ENDPOINT = SERVER + "12668";
+
+    private static final File IMAGE_DIR = new File(
+            "/media/ubuntu-prog/metalcon-images/images");
 
     private Dispatcher dispatcher;
 
@@ -97,34 +107,54 @@ public class Bootstrap {
 
         Band testy = null;
 
-        for (Band band : bands.values()) {
-            if (Character.isDigit(band.getName().toCharArray()[0])
-                    || band.getName().contains("\\")) {
-                continue;
-            }
+        boolean importBands = false;
+        boolean importRecords = false;
+        boolean importTracks = false;
+        boolean importImages = true;
 
-            if (testy == null && band.getRecords().size() == 0) {
-                testy = band;
-                System.out.println("Testy band is \"" + band.getName() + "\"");
-            }
+        if (importBands) {
+            for (Band band : bands.values()) {
+                if (Character.isDigit(band.getName().toCharArray()[0])
+                        || band.getName().contains("\\")) {
+                    continue;
+                }
 
-            importEntity(band);
+                if (testy == null && band.getRecords().size() == 0) {
+                    testy = band;
+                    System.out.println("Testy band is \"" + band.getName()
+                            + "\"");
+                }
+
+                importEntity(band);
+            }
         }
 
-        for (Record record : records.values()) {
-            if (record.getBands().size() == 1
-                    && record.getBands().contains(testy)) {
-                System.out.println("record: \"" + record.getName() + "\"");
+        if (importRecords) {
+            for (Record record : records.values()) {
+                if (record.getBands().size() == 1
+                        && record.getBands().contains(testy)) {
+                    System.out.println("record: \"" + record.getName() + "\"");
+                }
+                importEntity(record);
             }
-            importEntity(record);
         }
 
-        for (Track track : tracks.values()) {
-            if (track.getRecord().getBands().size() == 1
-                    && track.getRecord().getBands().contains(testy)) {
-                System.out.println("track: \"" + track.getName() + "\"");
+        if (importTracks) {
+            for (Track track : tracks.values()) {
+                if (track.getRecord().getBands().size() == 1
+                        && track.getRecord().getBands().contains(testy)) {
+                    System.out.println("track: \"" + track.getName() + "\"");
+                }
+                importEntity(track);
             }
-            importEntity(track);
+        }
+
+        if (importImages) {
+            for (Image image : images.values()) {
+                if (image.getEntity() != null) {
+                    importImage(image);
+                }
+            }
         }
 
         dispatcher.gatherResults(1000);
@@ -181,9 +211,9 @@ public class Bootstrap {
         });
     }
 
-    private void registerUrl(final Entity entity) {
+    protected void registerUrl(final UrlImportable browsable) {
         UrlRegistrationRequest urlRequest =
-                new UrlRegistrationRequest(entity.getUrlData());
+                new UrlRegistrationRequest(browsable.getUrlData());
 
         dispatcher.execute(urlRequest, new Callback<Response>() {
 
@@ -195,8 +225,8 @@ public class Bootstrap {
                     //                            + entity.getName() + ")" + entity.getMuid());
                 } else {
                     System.out.println("Url registration failed. ("
-                            + entity.getClass().getSimpleName() + ":"
-                            + entity.getName() + ")");
+                            + browsable.getClass().getSimpleName() + ":"
+                            + browsable.getName() + ")");
                     System.out.println(response.getStatusMessage());
                     if (response instanceof ErrorResponse) {
                         System.out.println(((ErrorResponse) response)
@@ -218,6 +248,32 @@ public class Bootstrap {
             }
 
         });
+    }
+
+    protected void importImage(Image image) throws FileNotFoundException {
+        // TODO registerUrl
+
+        String imagePath =
+                IMAGE_DIR + "/" + image.getName().toCharArray()[0] + "/"
+                        + image.getName() + ".jpg";
+        System.out.println(imagePath);
+        InputStream imageStream = new FileInputStream(imagePath);
+
+        CreateImageRequest request =
+                new CreateImageRequest(image.getEntity().getValue(),
+                        image.getImageInfo(), imageStream, GalleryType.ALL);
+
+        System.out.println("and here we...");
+        try {
+            Response response =
+                    (Response) dispatcher.executeSync(request, 1000);
+            if (!(response instanceof SuccessResponse)) {
+                System.out.println("failed to create image");
+            }
+        } catch (RequestException | TimeoutException e) {
+            e.printStackTrace();
+        }
+        System.out.println("...go!");
     }
 
     private void registerAdapters(Dispatcher dispatcher) {
