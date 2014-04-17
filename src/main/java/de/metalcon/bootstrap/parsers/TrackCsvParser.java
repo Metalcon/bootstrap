@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import de.metalcon.bootstrap.domain.impl.Track;
+import de.metalcon.bootstrap.domain.entities.Track;
 
 public class TrackCsvParser extends CsvParser<Track> {
 

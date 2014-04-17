@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <sdd-config>
-  <leveldb path="/usr/share/sdd/leveldb"/>
-  <neo4j path="/usr/share/sdd/neo4j"/>
+  <leveldb path="/usr/share/metalcon/staticDataDelivery/leveldb"/>
+  <neo4j path="/usr/share/metalcon/staticDataDelivery/neo4j"/>
   <transactions mode="single"/>
   
   <details>

@@ -1,4 +1,4 @@
-package de.metalcon.bootstrap.domain.impl;
+package de.metalcon.bootstrap.domain.entities;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -6,7 +6,6 @@ import java.util.Map;
 import de.metalcon.bootstrap.domain.Entity;
 import de.metalcon.domain.UidType;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
-import de.metalcon.testing.MuidFactory;
 import de.metalcon.urlmappingserver.api.requests.registration.EntityUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.RecordUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.TrackUrlData;
@@ -30,7 +29,7 @@ public class Track extends Entity {
             int duration,
             long discId,
             long bandId) {
-        super(legacyId, MuidFactory.generateMuid(UidType.TRACK), name);
+        super(legacyId, UidType.TRACK, name);
         this.trackNumber = trackNumber;
         this.duration = duration;
         this.discId = discId;

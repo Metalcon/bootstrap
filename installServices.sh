@@ -23,6 +23,15 @@ if $UMS_ENABLED; then
   sudo mkdir -p $UMS_CONFIG
   sudo chown -R $RIGHTS $UMS_CONFIG
   cp umsConfig.txt $UMS_CONFIG/config.txt
-  # reset gallery database
+  # reset database
   rm -rf $UMS_CONFIG/db
+fi
+
+# install image gallery server
+if $IGS_ENABLED; then
+  sudo mkdir -p $IGS_CONFIG
+  sudo chown -R $RIGHTS $IGS_CONFIG
+  cp igsConfig.txt $IGS_CONFIG/config.txt
+  # reset gallery database
+  rm -rf $IGS_CONFIG/galleryDb
 fi

@@ -4,10 +4,15 @@ import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Iterator;
 import java.util.List;
 
 public abstract class CsvParser<T > implements Iterable<T> {
+
+    protected static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
+            "yyyy-MM-dd HH:mm:ss");
 
     protected BufferedReader reader;
 

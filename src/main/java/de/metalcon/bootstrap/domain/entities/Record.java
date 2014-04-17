@@ -1,4 +1,4 @@
-package de.metalcon.bootstrap.domain.impl;
+package de.metalcon.bootstrap.domain.entities;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -11,7 +11,6 @@ import de.metalcon.bootstrap.domain.Entity;
 import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
-import de.metalcon.testing.MuidFactory;
 import de.metalcon.urlmappingserver.api.requests.registration.BandUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.EntityUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.RecordUrlData;
@@ -36,7 +35,7 @@ public class Record extends Entity {
             Date releaseDate,
             long coverId,
             int numFans) {
-        super(legacyId, MuidFactory.generateMuid(UidType.RECORD), name);
+        super(legacyId, UidType.RECORD, name);
         this.releaseDate = releaseDate;
         this.coverId = coverId;
         this.numFans = numFans;

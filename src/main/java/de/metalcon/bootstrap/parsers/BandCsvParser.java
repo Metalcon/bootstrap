@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
-import de.metalcon.bootstrap.domain.impl.Band;
+import de.metalcon.bootstrap.domain.entities.Band;
 
 public class BandCsvParser extends CsvParser<Band> {
 
