@@ -36,6 +36,7 @@ import de.metalcon.bootstrap.parsers.TrackCsvParser;
 import de.metalcon.exceptions.ServiceOverloadedException;
 import de.metalcon.imageGalleryServer.api.GalleryType;
 import de.metalcon.imageGalleryServer.api.requests.CreateImageRequest;
+import de.metalcon.imageGalleryServer.api.requests.GalleryServerRequest;
 import de.metalcon.sdd.api.requests.SddRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
 import de.metalcon.sdd.api.responses.SddResponse;
@@ -47,17 +48,12 @@ public class Bootstrap {
 
     public static final String SERVER = "tcp://141.26.71.69:";
 
-    public static final String SDD_SERVICE = "staticDataDeliveryServer";
-
     public static final String SDD_ENDPOINT = SERVER + "1337";
-
-    public static final String URL_MAPPING_SERVICE = "urlMappingServer";
 
     public static final String URL_MAPPING_SERVER_ENDPOINT = SERVER + "12666";
 
-    public static final String IMAGE_GALLERY_SERVICE = "galleryServer";
-
-    public static final String IMAGE_GALLERY_SERVER_ENDPOINT = SERVER + "12668";
+    public static final String IMAGE_GALLERY_SERVER_ENDPOINT =
+            "tcp://127.0.0.1/12669";
 
     private static final File IMAGE_DIR = new File(
             "/media/ubuntu-prog/metalcon-images/images");
@@ -89,7 +85,7 @@ public class Bootstrap {
 
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.load(100000);
-        //        bootstrap.run();
+        bootstrap.run();
 
         muidLoader.store();
     }
@@ -283,6 +279,10 @@ public class Bootstrap {
         // UrlMapping
         dispatcher.registerService(UrlMappingRequest.class,
                 URL_MAPPING_SERVER_ENDPOINT);
+
+        // ImageGallery
+        dispatcher.registerService(GalleryServerRequest.class,
+                IMAGE_GALLERY_SERVER_ENDPOINT);
     }
 
     private void load(int numEntities) throws ServiceOverloadedException,
