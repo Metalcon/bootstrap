@@ -18,12 +18,14 @@ import de.metalcon.api.responses.SuccessResponse;
 import de.metalcon.api.responses.errors.ErrorResponse;
 import de.metalcon.bootstrap.domain.Disc;
 import de.metalcon.bootstrap.domain.Entity;
-import de.metalcon.bootstrap.domain.impl.Band;
-import de.metalcon.bootstrap.domain.impl.Record;
-import de.metalcon.bootstrap.domain.impl.Track;
+import de.metalcon.bootstrap.domain.Image;
+import de.metalcon.bootstrap.domain.entities.Band;
+import de.metalcon.bootstrap.domain.entities.Record;
+import de.metalcon.bootstrap.domain.entities.Track;
 import de.metalcon.bootstrap.parsers.BandAlbumCsvParser;
 import de.metalcon.bootstrap.parsers.BandCsvParser;
 import de.metalcon.bootstrap.parsers.DiscCsvParser;
+import de.metalcon.bootstrap.parsers.ImageCsvParser;
 import de.metalcon.bootstrap.parsers.RecordCsvParser;
 import de.metalcon.bootstrap.parsers.TrackCsvParser;
 import de.metalcon.exceptions.ServiceOverloadedException;
@@ -36,14 +38,19 @@ import de.metalcon.urlmappingserver.api.requests.UrlRegistrationRequest;
 
 public class Bootstrap {
 
+    public static final String SERVER = "tcp://141.26.71.69:";
+
     public static final String SDD_SERVICE = "staticDataDeliveryServer";
 
-    public static final String SDD_ENDPOINT = "tcp://127.0.0.1:1337";
+    public static final String SDD_ENDPOINT = SERVER + "1337";
 
     public static final String URL_MAPPING_SERVICE = "urlMappingServer";
 
-    public static final String URL_MAPPING_SERVER_ENDPOINT =
-            "tcp://127.0.0.1:12666";
+    public static final String URL_MAPPING_SERVER_ENDPOINT = SERVER + "12666";
+
+    public static final String IMAGE_GALLERY_SERVICE = "galleryServer";
+
+    public static final String IMAGE_GALLERY_SERVER_ENDPOINT = SERVER + "12668";
 
     private Dispatcher dispatcher;
 
@@ -55,11 +62,32 @@ public class Bootstrap {
 
     private Map<Long, Disc> discs;
 
+    private Map<Long, Image> images;
+
+    private SddWriteRequest request;
+
+    private int numRequests;
+
+    private int maxRequests;
+
+    private int numActionsSddRequest;
+
     public static void main(String[] args) throws ServiceOverloadedException,
             InterruptedException, IOException {
+        MuidLoader muidLoader = new MuidLoader("muids.csv");
+        Entity.setMuidLoader(muidLoader);
+
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.load(1000);
-        bootstrap.run();
+        bootstrap.load(100000);
+        //        bootstrap.run();
+
+        muidLoader.store();
+    }
+
+    public Bootstrap() throws IOException {
+        numRequests = 0;
+        maxRequests = 500;
+        numActionsSddRequest = 0;
     }
 
     private void run() throws ServiceOverloadedException, InterruptedException,
@@ -67,36 +95,65 @@ public class Bootstrap {
         dispatcher = new Dispatcher();
         registerAdapters(dispatcher);
 
-        SddWriteRequest sddWriteRequest = new SddWriteRequest();
+        Band testy = null;
 
-        // FIXME make sure to send 1000 requests only
-        Band testy = bands.get(377L);
-        System.out.println("Testy: \"" + testy.getName() + "\"");
         for (Band band : bands.values()) {
-            registerUrl(band);
-            band.fillSddWriteRequest(sddWriteRequest);
-            importToStaticData(sddWriteRequest);
+            if (Character.isDigit(band.getName().toCharArray()[0])
+                    || band.getName().contains("\\")) {
+                continue;
+            }
+
+            if (testy == null && band.getRecords().size() == 0) {
+                testy = band;
+                System.out.println("Testy band is \"" + band.getName() + "\"");
+            }
+
+            importEntity(band);
         }
-        dispatcher.gatherResults(1000);
 
         for (Record record : records.values()) {
-            record.fillSddWriteRequest(sddWriteRequest);
-            registerUrl(record);
-            importToStaticData(sddWriteRequest);
-
-            if (record.getBands().contains(testy)) {
+            if (record.getBands().size() == 1
+                    && record.getBands().contains(testy)) {
                 System.out.println("record: \"" + record.getName() + "\"");
             }
+            importEntity(record);
         }
-        dispatcher.gatherResults(1000);
+
         for (Track track : tracks.values()) {
-            track.fillSddWriteRequest(sddWriteRequest);
-            registerUrl(track);
+            if (track.getRecord().getBands().size() == 1
+                    && track.getRecord().getBands().contains(testy)) {
+                System.out.println("track: \"" + track.getName() + "\"");
+            }
+            importEntity(track);
         }
-        dispatcher.gatherResults(2000);
+
+        dispatcher.gatherResults(1000);
+        System.out.println("results gathered");
 
         System.out.println("done.");
         dispatcher.shutdown();
+    }
+
+    protected void importEntity(Entity entity) {
+        if (request == null) {
+            request = new SddWriteRequest();
+        }
+
+        registerUrl(entity);
+        entity.fillSddWriteRequest(request);
+        numActionsSddRequest += 1;
+
+        // TODO if
+        importToStaticData(request);
+        request = new SddWriteRequest();
+        numActionsSddRequest = 0;
+        numRequests += 1;
+
+        if (numRequests >= maxRequests) {
+            numRequests = 0;
+            dispatcher.gatherResults(5000);
+            System.out.println("results gathered");
+        }
     }
 
     protected void importToStaticData(SddWriteRequest request) {
@@ -110,19 +167,24 @@ public class Bootstrap {
             @Override
             public void onSuccess(SddResponse response) {
                 if (response instanceof SddSucessfullQueueResponse) {
-                    //                    System.out.println("import successfully done");
+                    //                            System.out.println("Queing data worked");
                 } else {
                     System.out.println("Queing data failed: "
                             + response.getClass());
                 }
             }
 
+            @Override
+            public void onTimeout() {
+                System.err.println("static data request timed out");
+            }
         });
     }
 
     private void registerUrl(final Entity entity) {
         UrlRegistrationRequest urlRequest =
                 new UrlRegistrationRequest(entity.getUrlData());
+
         dispatcher.execute(urlRequest, new Callback<Response>() {
 
             @Override
@@ -130,7 +192,7 @@ public class Bootstrap {
                 if (response instanceof SuccessResponse) {
                     //                    System.out.println("Url registration worked. ("
                     //                            + entity.getClass().getSimpleName() + ":"
-                    //                            + entity.getName() + ")");
+                    //                            + entity.getName() + ")" + entity.getMuid());
                 } else {
                     System.out.println("Url registration failed. ("
                             + entity.getClass().getSimpleName() + ":"
@@ -152,7 +214,7 @@ public class Bootstrap {
 
             @Override
             public void onTimeout() {
-                System.err.println("request timed out");
+                System.err.println("URL mapping request timed out");
             }
 
         });
@@ -201,6 +263,13 @@ public class Bootstrap {
         // remove unused tracks
         removeUnusedTracks(unusedTracks);
         System.out.println(tracks.size() + " tracks linked");
+
+        // load images
+        images = loadImages(csvDir + "Image.csv");
+        System.out.println(images.size() + " images imported");
+
+        // link images
+        Set<Long> unusedImages = linkImages(bands, records, tracks, images);
 
         // append filter
         cutToNumEntities(numEntities);
@@ -302,6 +371,18 @@ public class Bootstrap {
         return discs;
     }
 
+    protected static Map<Long, Image> loadImages(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Image> images = new HashMap<Long, Image>();
+        ImageCsvParser imageParser = new ImageCsvParser(filePath);
+        for (Image image : imageParser) {
+            images.put(image.getLegacyId(), image);
+            //            System.out.println("i[" + image.getLegacyId() + "|"
+            //                    + image.getMuid() + "] " + image.getName());
+        }
+        return images;
+    }
+
     protected static Set<Long> linkRecords(
             String filePath,
             Map<Long, Band> bands,
@@ -359,6 +440,27 @@ public class Bootstrap {
             unusedTracks.remove(trackId);
         }
         return unusedTracks;
+    }
+
+    protected static Set<Long> linkImages(
+            Map<Long, Band> bands,
+            Map<Long, Record> records,
+            Map<Long, Track> tracks,
+            Map<Long, Image> images) {
+        Set<Long> unusedImages = new LinkedHashSet<Long>();
+
+        Image image;
+
+        Band band;
+        for (Long bandId : bands.keySet()) {
+            band = bands.get(bandId);
+            image = images.get(band.getPhotoId());
+            //            System.out.println(image.getName() + "@" + band.getName());
+
+            image.setEntity(band.getMuid());
+        }
+
+        return unusedImages;
     }
 
 }

@@ -2,19 +2,14 @@ package de.metalcon.bootstrap.parsers;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
-import de.metalcon.bootstrap.domain.impl.Record;
+import de.metalcon.bootstrap.domain.entities.Record;
 
 public class RecordCsvParser extends CsvParser<Record> {
-
-    private static final DateFormat DATE_FORMATTER = new SimpleDateFormat(
-            "yyyy-MM-dd HH:mm:ss");
 
     public RecordCsvParser(
             String filePath) throws FileNotFoundException {

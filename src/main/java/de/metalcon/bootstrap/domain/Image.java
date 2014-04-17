@@ -1,24 +1,50 @@
 package de.metalcon.bootstrap.domain;
 
-public class Image {
+import java.util.Date;
 
-    protected long legacyId;
+import de.metalcon.domain.Muid;
+import de.metalcon.domain.UidType;
 
-    protected long entityId;
+public class Image extends UidInstance {
+
+    protected Date date;
+
+    protected int width;
+
+    protected int height;
+
+    protected Muid entity;
 
     public Image(
             long legacyId,
-            long entityId) {
-        this.legacyId = legacyId;
-        this.entityId = entityId;
+            String fileName,
+            Date date,
+            int width,
+            int height) {
+        super(UidType.IMAGE, legacyId, fileName);
+        this.date = date;
+        this.width = width;
+        this.height = height;
     }
 
-    public long getLegacyId() {
-        return legacyId;
+    public Date getDate() {
+        return date;
     }
 
-    public long getEntityId() {
-        return entityId;
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public Muid getEntity() {
+        return entity;
+    }
+
+    public void setEntity(Muid muid) {
+        entity = muid;
     }
 
 }

@@ -1,4 +1,4 @@
-package de.metalcon.bootstrap.domain.impl;
+package de.metalcon.bootstrap.domain.entities;
 
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -9,7 +9,6 @@ import de.metalcon.bootstrap.domain.Entity;
 import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
-import de.metalcon.testing.MuidFactory;
 import de.metalcon.urlmappingserver.api.requests.registration.BandUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.EntityUrlData;
 
@@ -28,7 +27,7 @@ public class Band extends Entity {
             String name,
             long photoId,
             String urlMySpace) {
-        super(legacyId, MuidFactory.generateMuid(UidType.BAND), name);
+        super(legacyId, UidType.BAND, name);
         this.photoId = photoId;
         this.urlMySpace = urlMySpace;
     }
@@ -77,8 +76,12 @@ public class Band extends Entity {
         }
 
         request.setProperties(getMuid(), properties);
-        request.setRelations(getMuid(), "records", recordMuids);
-        request.setRelations(getMuid(), "tracks", trackMuids);
+        if (recordMuids.size() > 0) {
+            request.setRelations(getMuid(), "records", recordMuids);
+        }
+        if (trackMuids.size() > 0) {
+            request.setRelations(getMuid(), "tracks", trackMuids);
+        }
     }
 
     @Override
