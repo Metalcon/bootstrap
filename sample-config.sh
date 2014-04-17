@@ -1,8 +1,8 @@
-METALCON_PREFIX="/home/`whoami`/metalcon/workspace"
+METALCON_PREFIX="/home/`whoami`/git/metalcon"
 
 SDD_ENABLED=true
 UMS_ENABLED=true
-IGS_ENABLED=false
+IGS_ENABLED=true
 
 SDD_PATH="${METALCON_PREFIX}/staticDataDeliveryServer"
 UMS_PATH="${METALCON_PREFIX}/urlMappingServer"

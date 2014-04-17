@@ -2,8 +2,9 @@ configFile="config.sh"
 
 if [ ! -e "$configFile" ]
 then
-	echo "File not found: $configFile"
-	echo "Try 'cp config.{sample.sh,sh}'"
+	echo "configuration file not found: '$configFile'"
+	echo "edit 'sample-config.sh' to match your needs and do"
+	echo "cp sample-config.sh $configFile"
 	exit
 fi
 
