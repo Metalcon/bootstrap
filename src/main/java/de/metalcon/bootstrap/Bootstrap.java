@@ -46,14 +46,14 @@ import de.metalcon.urlmappingserver.api.requests.UrlRegistrationRequest;
 
 public class Bootstrap {
 
-    public static final String SERVER = "tcp://141.26.71.69:";
+    public static final String SERVER = "tcp://127.0.0.1:";
 
     public static final String SDD_ENDPOINT = SERVER + "1337";
 
     public static final String URL_MAPPING_SERVER_ENDPOINT = SERVER + "12666";
 
     public static final String IMAGE_GALLERY_SERVER_ENDPOINT =
-            "tcp://127.0.0.1:12669";
+            "tcp://141.26.71.88:12669";
 
     private static final File IMAGE_DIR = new File(
             "/media/ubuntu-prog/metalcon-images/images");
@@ -86,6 +86,17 @@ public class Bootstrap {
         Bootstrap bootstrap = new Bootstrap();
         bootstrap.load(100000);
         bootstrap.run();
+
+        //        LastFMAlbumApi lfmApi = new LastFMAlbumApi();
+        //        YoutubeApiClient youtubeApiClient = new YoutubeApiClient();
+        //        // TODO: we also need the metawebID (for youtube later on.)
+        //        Album iron = lfmApi.getTracksByName("ensiferum", "iron");
+        //        for (lastFMAlbum.Track t : iron.getTracks()) {
+        //            // this call will not make sense since we don't have a topic ID and Mbid won't help
+        //            youtubeApiClient.youtubeSongSearch(5, t.getName(), iron.getMbid());
+        //            // this call makes more sense but it would have been nice to use the mbid for higher precision
+        //            youtubeApiClient.youtubeSongSearch(5, "ensiferum " + t.getName());
+        //        }
 
         muidLoader.store();
     }
@@ -256,7 +267,8 @@ public class Bootstrap {
         InputStream imageStream = new FileInputStream(imagePath);
 
         CreateImageRequest request =
-                new CreateImageRequest(image, imageStream, GalleryType.ALL);
+                new CreateImageRequest(image.getEntity().getValue(),
+                        image.getImageInfo(), imageStream, GalleryType.ALL);
 
         System.out.println("and here we...");
         try {

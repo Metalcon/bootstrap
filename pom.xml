@@ -1,17 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <groupId>de.metalcon</groupId>
     <artifactId>pom</artifactId>
-    <version>0.0.15</version>
+    <version>0.0.17</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
 
   <artifactId>bootstrap</artifactId>
-  <version>0.0.5</version>
+  <version>0.0.6</version>
   <packaging>jar</packaging>
 
   <name>bootstrap</name>
@@ -69,5 +67,15 @@
       <artifactId>image-gallery-server-api</artifactId>
       <version>${metalcon.imageGalleryServer.api.version}</version>
     </dependency>
-  </dependencies>
+     <dependency>
+        <groupId>de.metalcon</groupId>
+        <artifactId>reconciling</artifactId>
+        <version>${metalcon.reconciling.version}</version>
+    </dependency> 
+     <dependency>
+        <groupId>de.metalcon</groupId>
+        <artifactId>YoutubeServer</artifactId>
+        <version>${metalcon.youtubeServerAPI.version}</version>
+    </dependency> 
+  </dependencies> 
 </project>

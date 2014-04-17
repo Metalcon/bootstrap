@@ -1,12 +1,15 @@
 package de.metalcon.bootstrap.domain;
 
+import java.io.Serializable;
 import java.util.Date;
 
 import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
 import de.metalcon.imageGalleryServer.api.ImageInfo;
 
-public class Image extends UidInstance implements ImageInfo {
+public class Image extends UidInstance implements Serializable {
+
+    private static final long serialVersionUID = -6871518925845083235L;
 
     protected Date date;
 
@@ -48,29 +51,8 @@ public class Image extends UidInstance implements ImageInfo {
         entity = muid;
     }
 
-    @Override
-    public long getTimestamp() {
-        return date.getTime();
-    }
-
-    @Override
-    public long getIdentifier() {
-        return muid.getValue();
-    }
-
-    @Override
-    public String getUrlLink() {
-        return null;
-    }
-
-    @Override
-    public String getTitle() {
-        return null;
-    }
-
-    @Override
-    public String getMetaData() {
-        return null;
+    public ImageInfo getImageInfo() {
+        return new ImageInfo(date.getTime(), muid.getValue(), null, null, null);
     }
 
 }
