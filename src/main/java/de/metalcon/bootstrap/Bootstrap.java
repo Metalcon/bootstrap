@@ -53,7 +53,7 @@ public class Bootstrap {
     public static final String URL_MAPPING_SERVER_ENDPOINT = SERVER + "12666";
 
     public static final String IMAGE_GALLERY_SERVER_ENDPOINT =
-            "tcp://127.0.0.1/12669";
+            "tcp://127.0.0.1:12669";
 
     private static final File IMAGE_DIR = new File(
             "/media/ubuntu-prog/metalcon-images/images");
@@ -256,8 +256,7 @@ public class Bootstrap {
         InputStream imageStream = new FileInputStream(imagePath);
 
         CreateImageRequest request =
-                new CreateImageRequest(image.getEntity().getValue(),
-                        image.getImageInfo(), imageStream, GalleryType.ALL);
+                new CreateImageRequest(image, imageStream, GalleryType.ALL);
 
         System.out.println("and here we...");
         try {
