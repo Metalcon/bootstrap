@@ -31,6 +31,18 @@ if $IGS_ENABLED; then
   popd > /dev/null
 fi
 
+# install like button server
+if $LIKE_ENABLED; then
+  pushd $LIKE_PATH
+  ./install.sh
+  popd > /dev/null
+fi
+
+# install uid stuff
+pushd $UID_PATH
+./install.sh
+popd > /dev/null
+
 echo "directory for log files is \"$LOG_DIR\""
 if [ ! -e "$LOG_DIR" ]
 then
