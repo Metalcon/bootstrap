@@ -81,6 +81,17 @@ public class Bootstrap {
         bootstrap.load(100000);
         //        bootstrap.run();
 
+        //        LastFMAlbumApi lfmApi = new LastFMAlbumApi();
+        //        YoutubeApiClient youtubeApiClient = new YoutubeApiClient();
+        //        // TODO: we also need the metawebID (for youtube later on.)
+        //        Album iron = lfmApi.getTracksByName("ensiferum", "iron");
+        //        for (lastFMAlbum.Track t : iron.getTracks()) {
+        //            // this call will not make sense since we don't have a topic ID and Mbid won't help
+        //            youtubeApiClient.youtubeSongSearch(5, t.getName(), iron.getMbid());
+        //            // this call makes more sense but it would have been nice to use the mbid for higher precision
+        //            youtubeApiClient.youtubeSongSearch(5, "ensiferum " + t.getName());
+        //        }
+
         muidLoader.store();
     }
 
