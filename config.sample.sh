@@ -7,3 +7,5 @@ IGS_ENABLED=false
 SDD_PATH="${METALCON_PREFIX}/staticDataDeliveryServer"
 UMS_PATH="${METALCON_PREFIX}/urlMappingServer"
 IGS_PATH="${METALCON_PREFIX}/imageGalleryServer"
+
+LOG_DIR="/usr/share/metalcon/log"
