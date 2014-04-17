@@ -11,7 +11,11 @@ Open `supervisord.conf` and change the directories of your components and also c
 run 
 * `supervisord -c supervisord.conf`
 
-If you have to install supervisord don't use the version from your linux distro but rather use `sudo easy_install supervisord` which comes with python.  
+If you have to install supervisord don't use the version from your linux distro but rather use
+
+    sudo easy_install supervisor
+    
+which comes with python.  
 You might have to install easy_install for your python version:
 
     sudo apt-get install python-setuptools
