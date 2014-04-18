@@ -1,11 +1,21 @@
 metalcon
 ========
 
-Copy config.sample.sh to config.sh and set your variables.
-in particular `METALCON_PREFIX=` to the working space in which your metalcon repositories are placed.
+Copy config.sample.sh to config.sh and set your variables. In particular set `METALCON_PREFIX` to 
+the directory where all metalcon repositories should be placed.
 
-run
-* `./installServices.sh` - installs all enabled components
+Next step is to run
+
+     ./installServices.sh
+ 
+to insall all components, that have been configured in the config.sh file.
+
+For each service additional configuration is necessary. In particular 
+
+    mvn compile
+
+should be executed for each java serive.
+
 
 Open `supervisord.conf` and change the directories of your components and also change the password for the buildin webserver.
 run 
