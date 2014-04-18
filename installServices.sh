@@ -14,13 +14,17 @@ source $configFile
 if $SDD_ENABLED; then
   if [ ! -e $SDD_PATH ]
   then
-    echo "[ERROR] static data delivery server is missing"
-    echo "you can pull the server via"
-    echo "git clone https://github.com/Metalcon/staticDataDeliveryServer.git"
+    echo "[INFO] static data delivery server is missing, gets cloned into \"$METALCON_PREFIX\""
+    pushd $METALCON_PREFIX > /dev/null
+    git clone https://github.com/Metalcon/staticDataDeliveryServer.git > /dev/null
+    popd > /dev/null
   fi
   
   pushd $SDD_PATH
-  ./install.sh
+  if ! ./install.sh
+  then
+    exit 1
+  fi
   popd > /dev/null
 fi
 
@@ -28,13 +32,17 @@ fi
 if $UMS_ENABLED; then
   if [ ! -e $UMS_PATH ]
   then
-    echo "[ERROR] URL mapping server is missing"
-    echo "you can pull the server via"
-    echo "git clone https://github.com/Metalcon/urlMappingServer.git"
+    echo "[INFO] URL mapping server is missing, gets cloned into \"$METALCON_PREFIX\""
+    pushd $METALCON_PREFIX > /dev/null
+    git clone https://github.com/Metalcon/urlMappingServer.git > /dev/null
+    popd > /dev/null
   fi
 
   pushd $UMS_PATH
-  ./install.sh
+  if ! ./install.sh
+  then
+    exit 1
+  fi
   popd > /dev/null
 fi
 
@@ -42,13 +50,17 @@ fi
 if $IGS_ENABLED; then
   if [ ! -e $IGS_PATH ]
   then
-    echo "[ERROR] image gallery server is missing"
-    echo "you can pull the server via"
-    echo "git clone https://github.com/Metalcon/imageGalleryServer.git"
+    echo "[INFO] image gallery server is missing, gets cloned into \"$METALCON_PREFIX\""
+    pushd $METALCON_PREFIX > /dev/null
+    git clone https://github.com/Metalcon/imageGalleryServer.git > /dev/null
+    popd > /dev/null
   fi
   
   pushd $IGS_PATH
-  ./install.sh
+  if ! ./install.sh
+  then
+    exit 1
+  fi
   popd > /dev/null
 fi
 
@@ -56,31 +68,39 @@ fi
 if $LIKE_ENABLED; then
   if [ ! -e $LIKE_PATH ]
   then
-    echo "[ERROR] like button server is missing"
-    echo "you can pull the server via"
-    echo "git clone https://github.com/Metalcon/likeButtonServer.git"
+    echo "[INFO] like button server is missing, gets cloned into \"$METALCON_PREFIX\""
+    pushd $METALCON_PREFIX > /dev/null
+    git clone https://github.com/Metalcon/likeButtonServer.git > /dev/null
+    popd > /dev/null
   fi
 
   pushd $LIKE_PATH
-  ./install.sh
+  if ! ./install.sh
+  then
+    exit 1
+  fi
   popd > /dev/null
 fi
 
 # install UID service
 if [ ! -e $UID_PATH ]
 then
-  echo "[ERROR] MUID service is missing"
-  echo "you can pull it via"
-  echo "git clone https://github.com/Metalcon/muid.git"
-fi
+    echo "[INFO] UID service is missing, gets cloned into \"$METALCON_PREFIX\""
+    pushd $METALCON_PREFIX > /dev/null
+    git clone https://github.com/Metalcon/muid.git > /dev/null
+    popd > /dev/null
+  fi
 
 pushd $UID_PATH
-./install.sh
+if ! ./install.sh
+then
+  exit 1
+fi
 popd > /dev/null
 
 echo "directory for log files is \"$LOG_DIR\""
 if [ ! -e "$LOG_DIR" ]
 then
-	echo "directory not present, creating..."
+	echo 'directory not present, creating...'
 	sudo mkdir -p $LOG_DIR
 fi

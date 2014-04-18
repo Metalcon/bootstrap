@@ -6,6 +6,7 @@ IGS_ENABLED=true
 LIKE_ENABLED=true
 # UID service always enabled
 
+# paths MUST be children of METALCON_PREFIX
 SDD_PATH="${METALCON_PREFIX}/staticDataDeliveryServer"
 UMS_PATH="${METALCON_PREFIX}/urlMappingServer"
 IGS_PATH="${METALCON_PREFIX}/imageGalleryServer"
