@@ -91,3 +91,5 @@ then
 	echo 'directory not present, creating...'
 	sudo mkdir -p $LOG_DIR
 fi
+
+echo !!!! INSTALL SUCCESSFULLY FINNISHED STAY TRUE METAL RULZ  !!!!
