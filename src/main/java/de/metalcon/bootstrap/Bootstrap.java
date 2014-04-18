@@ -114,7 +114,7 @@ public class Bootstrap {
 
         Band testy = null;
 
-        boolean importBands = true;
+        boolean importBands = false;
         boolean importRecords = false;
         boolean importTracks = false;
         boolean importImages = false;

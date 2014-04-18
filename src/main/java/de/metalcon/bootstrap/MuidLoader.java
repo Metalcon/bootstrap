@@ -83,6 +83,7 @@ public class MuidLoader {
 
     public Muid getMuid(Long legacyId, UidType uidType) {
         Map<Long, Muid> muidsForUidType = muids.get(uidType);
+
         if (muidsForUidType != null) {
             // search for MUID
             if (muidsForUidType.containsKey(legacyId)) {
