@@ -1,12 +1,10 @@
-package de.metalcon.bootstrap.domain.impl;
+package de.metalcon.bootstrap.domain.entities;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import de.metalcon.bootstrap.domain.Entity;
-import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
-import de.metalcon.exceptions.ServiceOverloadedException;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
 import de.metalcon.urlmappingserver.api.requests.registration.EntityUrlData;
 import de.metalcon.urlmappingserver.api.requests.registration.RecordUrlData;
@@ -16,47 +14,61 @@ public class Track extends Entity {
 
     private int trackNumber;
 
-    private Band band;
+    private int duration;
+
+    private long discId;
+
+    private long bandId;
 
     private Record record;
 
     public Track(
+            long legacyId,
             String name,
             int trackNumber,
-            Band band,
-            Record record) throws ServiceOverloadedException {
-        super(Muid.create(UidType.TRACK), name);
+            int duration,
+            long discId,
+            long bandId) {
+        super(legacyId, UidType.TRACK, name);
         this.trackNumber = trackNumber;
-        this.band = band;
-        this.record = record;
-    }
-
-    public int getTrackNumber() {
-        return trackNumber;
-    }
-
-    public Band getBand() {
-        return band;
+        this.duration = duration;
+        this.discId = discId;
+        this.bandId = bandId;
     }
 
     public Record getRecord() {
         return record;
     }
 
+    public void setRecord(Record record) {
+        this.record = record;
+    }
+
+    public long getDiscId() {
+        return discId;
+    }
+
+    public long getBandId() {
+        return bandId;
+    }
+
     @Override
     public void fillSddWriteRequest(SddWriteRequest request) {
         Map<String, String> properties = new HashMap<String, String>();
         properties.put("name", getName());
-        properties.put("trackNumber", String.valueOf(getTrackNumber()));
+        properties.put("trackNumber", String.valueOf(trackNumber));
+        properties.put("duration", String.valueOf(duration));
 
         request.setProperties(getMuid(), properties);
-        request.setRelation(getMuid(), "band", band.getMuid());
+        // TODO use multiple bands
+        request.setRelation(getMuid(), "band", record.getBands().iterator()
+                .next().getMuid());
         request.setRelation(getMuid(), "record", record.getMuid());
     }
 
     @Override
     public EntityUrlData getUrlData() {
         return new TrackUrlData(getMuid(), getName(), null,
-                (RecordUrlData) getRecord().getUrlData(), getTrackNumber());
+                (RecordUrlData) getRecord().getUrlData(), trackNumber);
     }
 }

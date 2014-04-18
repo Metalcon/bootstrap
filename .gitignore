@@ -18,3 +18,10 @@ bin/
 
 # backup files
 *~
+
+# CSV files
+*.csv
+
+# config files
+config.sh
+supervisord.conf

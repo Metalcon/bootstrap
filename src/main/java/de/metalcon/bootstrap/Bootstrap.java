@@ -1,62 +1,124 @@
 package de.metalcon.bootstrap;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import net.hh.request_dispatcher.Callback;
 import net.hh.request_dispatcher.Dispatcher;
-import net.hh.request_dispatcher.server.RequestException;
-import net.hh.request_dispatcher.service_adapter.ZmqAdapter;
-
-import org.zeromq.ZMQ;
-
+import net.hh.request_dispatcher.RequestException;
 import de.metalcon.api.responses.Response;
 import de.metalcon.api.responses.SuccessResponse;
 import de.metalcon.api.responses.errors.ErrorResponse;
+import de.metalcon.bootstrap.domain.Disc;
 import de.metalcon.bootstrap.domain.Entity;
-import de.metalcon.bootstrap.domain.impl.Band;
-import de.metalcon.bootstrap.domain.impl.Record;
-import de.metalcon.bootstrap.domain.impl.Track;
-import de.metalcon.domain.Muid;
+import de.metalcon.bootstrap.domain.Image;
+import de.metalcon.bootstrap.domain.UrlImportable;
+import de.metalcon.bootstrap.domain.entities.Band;
+import de.metalcon.bootstrap.domain.entities.Record;
+import de.metalcon.bootstrap.domain.entities.Track;
+import de.metalcon.bootstrap.parsers.BandAlbumCsvParser;
+import de.metalcon.bootstrap.parsers.BandCsvParser;
+import de.metalcon.bootstrap.parsers.DiscCsvParser;
+import de.metalcon.bootstrap.parsers.ImageCsvParser;
+import de.metalcon.bootstrap.parsers.RecordCsvParser;
+import de.metalcon.bootstrap.parsers.TrackCsvParser;
 import de.metalcon.exceptions.ServiceOverloadedException;
-import de.metalcon.sdd.api.requests.SddReadRequest;
+import de.metalcon.imageGalleryServer.api.GalleryType;
+import de.metalcon.imageGalleryServer.api.requests.CreateImageRequest;
+import de.metalcon.imageGalleryServer.api.requests.GalleryServerRequest;
+import de.metalcon.sdd.api.requests.SddRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
 import de.metalcon.sdd.api.responses.SddResponse;
 import de.metalcon.sdd.api.responses.SddSucessfullQueueResponse;
-import de.metalcon.urlmappingserver.api.requests.UrlMappingRegistrationRequest;
-import de.metalcon.urlmappingserver.api.requests.UrlMappingResolveRequest;
+import de.metalcon.urlmappingserver.api.requests.UrlMappingRequest;
+import de.metalcon.urlmappingserver.api.requests.UrlRegistrationRequest;
 
 public class Bootstrap {
 
-    public static final String SDD_SERVICE = "staticDataDeliveryServer";
+    public static final String SERVER = "tcp://127.0.0.1:";
 
-    public static final String SDD_ENDPOINT = "tcp://127.0.0.1:1337";
+    public static final String SDD_ENDPOINT = SERVER + "1337";
 
-    public static final String URL_MAPPING_SERVICE = "urlMappingServer";
+    public static final String URL_MAPPING_SERVER_ENDPOINT = SERVER + "12666";
 
-    public static final String URL_MAPPING_SERVER_ENDPOINT =
-            "tcp://127.0.0.1:12666";
+    public static final String IMAGE_GALLERY_SERVER_ENDPOINT = SERVER + "12669";
 
-    private static ZMQ.Context context;
+    private static final File IMAGE_DIR = new File(
+            "/media/ubuntu-prog/metalcon-images/images");
 
     private Dispatcher dispatcher;
 
-    private Map<Muid, Band> bands = new HashMap<Muid, Band>();
+    private Map<Long, Band> bands;
 
-    private Map<Muid, Record> records = new HashMap<Muid, Record>();
+    private Map<Long, Record> records;
 
-    private Map<Muid, Track> tracks = new HashMap<Muid, Track>();
+    private Map<Long, Track> tracks;
+
+    private Map<Long, Disc> discs;
+
+    private Map<Long, Image> images;
+
+    private SddWriteRequest request;
+
+    private int numRequests;
+
+    private int maxRequests;
+
+    private int numActionsSddRequest;
 
     public static void main(String[] args) throws ServiceOverloadedException,
             InterruptedException, IOException {
-        context = ZMQ.context(1);
+        MuidLoader muidLoader = new MuidLoader("muids.csv");
+        Entity.setMuidLoader(muidLoader);
 
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.load();
+        bootstrap.load(1000);
         bootstrap.run();
 
-        context.close();
+        //        MetalconFreebaseRequest mfr = new MetalconFreebaseRequest();
+        //        LastFMAlbumApi lfmApi = new LastFMAlbumApi();
+        //        YoutubeApiClient youtubeApiClient = new YoutubeApiClient();
+        //        try {
+        //            FreebaseMetaData band = mfr.reconcileBand("Ensiferum");
+        //            List<FreebaseMetaData> ensiferumRecords =
+        //                    mfr.retrieveRecordsForFreebaseBand(band.getMid());
+        //            
+        //            for (FreebaseMetaData record : ensiferumRecords){
+        //                //record.ge
+        //                Album iron = lfmApi.getTracksByName(artist, albumName);
+        //                for (lastFMAlbum.Track t : iron.getTracks()) {
+        //                    // this call will not make sense since we don't have a topic ID and Mbid won't help
+        //                    youtubeApiClient.youtubeSongSearch(5, t.getName(), iron.getMbid());
+        //                    // this call makes more sense but it would have been nice to use the mbid for higher precision
+        //                    youtubeApiClient.youtubeSongSearch(5, "ensiferum " + t.getName());
+        //                }
+        //                
+        //            }
+        //            
+        //        } catch (ParseException e) {
+        //            // TODO Auto-generated catch block
+        //            e.printStackTrace();
+        //        }
+        //        // TODO: we also need the metawebID (for youtube later on.)
+
+        muidLoader.store();
+    }
+
+    public Bootstrap() throws IOException {
+        numRequests = 0;
+        maxRequests = 500;
+        numActionsSddRequest = 0;
     }
 
     private void run() throws ServiceOverloadedException, InterruptedException,
@@ -64,22 +126,89 @@ public class Bootstrap {
         dispatcher = new Dispatcher();
         registerAdapters(dispatcher);
 
-        SddWriteRequest sddWriteRequest = new SddWriteRequest();
+        Band testy = null;
+        Image image;
 
-        for (Band band : bands.values()) {
-            band.fillSddWriteRequest(sddWriteRequest);
-            registerUrl(band);
-        }
-        for (Record record : records.values()) {
-            record.fillSddWriteRequest(sddWriteRequest);
-            registerUrl(record);
-        }
-        for (Track track : tracks.values()) {
-            track.fillSddWriteRequest(sddWriteRequest);
-            registerUrl(track);
+        boolean importBands = true;
+        boolean importRecords = true;
+        boolean importTracks = true;
+        boolean importImages = false;
+
+        if (importBands) {
+            for (Band band : bands.values()) {
+                if (Character.isDigit(band.getName().toCharArray()[0])
+                        || band.getName().contains("\\")) {
+                    continue;
+                }
+
+                if (testy == null && band.getRecords().size() == 0) {
+                    testy = band;
+                    System.out.println("Testy band is \"" + band.getName()
+                            + "\"");
+                }
+
+                importEntity(band);
+                if (importImages) {
+                    image = images.get(band.getPhotoId());
+                    if (image != null) {
+                        importImage(image);
+                        images.remove(image);
+                    }
+                }
+            }
         }
 
-        dispatcher.execute(sddWriteRequest, new Callback<SddResponse>() {
+        if (importRecords) {
+            for (Record record : records.values()) {
+                if (record.getBands().size() == 1
+                        && record.getBands().contains(testy)) {
+                    System.out.println("record: \"" + record.getName() + "\"");
+                }
+                importEntity(record);
+            }
+        }
+
+        if (importTracks) {
+            for (Track track : tracks.values()) {
+                if (track.getRecord().getBands().size() == 1
+                        && track.getRecord().getBands().contains(testy)) {
+                    System.out.println("track: \"" + track.getName() + "\"");
+                }
+                importEntity(track);
+            }
+        }
+
+        dispatcher.gatherResults(1000);
+        System.out.println("results gathered");
+
+        System.out.println("done.");
+        dispatcher.shutdown();
+    }
+
+    protected void importEntity(Entity entity) {
+        if (request == null) {
+            request = new SddWriteRequest();
+        }
+
+        registerUrl(entity);
+        entity.fillSddWriteRequest(request);
+        numActionsSddRequest += 1;
+
+        // TODO if
+        importToStaticData(request);
+        request = new SddWriteRequest();
+        numActionsSddRequest = 0;
+        numRequests += 1;
+
+        if (numRequests >= maxRequests) {
+            numRequests = 0;
+            dispatcher.gatherResults(5000);
+            System.out.println("results gathered");
+        }
+    }
+
+    protected void importToStaticData(SddWriteRequest request) {
+        dispatcher.execute(request, new Callback<SddResponse>() {
 
             @Override
             public void onError(RequestException exception) {
@@ -89,40 +218,36 @@ public class Bootstrap {
             @Override
             public void onSuccess(SddResponse response) {
                 if (response instanceof SddSucessfullQueueResponse) {
-                    System.out.println("Queing data worked.");
+                    //                            System.out.println("Queing data worked");
                 } else {
                     System.out.println("Queing data failed: "
                             + response.getClass());
                 }
             }
 
+            @Override
+            public void onTimeout() {
+                System.err.println("static data request timed out");
+            }
         });
-
-        dispatcher.gatherResults();
-
-        dispatcher.close();
     }
 
-    private void registerUrl(final Entity entity) {
-        UrlMappingRegistrationRequest urlRequest =
-                new UrlMappingRegistrationRequest(entity.getUrlData());
-        dispatcher.execute(urlRequest, new Callback<Response>() {
+    protected void registerUrl(final UrlImportable browsable) {
+        UrlRegistrationRequest urlRequest =
+                new UrlRegistrationRequest(browsable.getUrlData());
 
-            @Override
-            public void onError(RequestException exception) {
-                exception.printStackTrace();
-            }
+        dispatcher.execute(urlRequest, new Callback<Response>() {
 
             @Override
             public void onSuccess(Response response) {
                 if (response instanceof SuccessResponse) {
                     System.out.println("Url registration worked. ("
-                            + entity.getClass().getSimpleName() + ":"
-                            + entity.getName() + ")");
+                            + browsable.getClass().getSimpleName() + ":"
+                            + browsable.getName() + ")");
                 } else {
                     System.out.println("Url registration failed. ("
-                            + entity.getClass().getSimpleName() + ":"
-                            + entity.getName() + ")");
+                            + browsable.getClass().getSimpleName() + ":"
+                            + browsable.getName() + ")");
                     System.out.println(response.getStatusMessage());
                     if (response instanceof ErrorResponse) {
                         System.out.println(((ErrorResponse) response)
@@ -133,207 +258,290 @@ public class Bootstrap {
                 }
             }
 
+            @Override
+            public void onError(RequestException e) {
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onTimeout() {
+                System.err.println("URL mapping request timed out");
+            }
+
         });
+    }
+
+    protected void importImage(Image image) throws FileNotFoundException {
+        // TODO registerUrl
+
+        String imagePath =
+                IMAGE_DIR + "/" + image.getName().toCharArray()[0] + "/"
+                        + image.getName() + ".jpg";
+        System.out.println(imagePath);
+        InputStream imageStream = new FileInputStream(imagePath);
+
+        CreateImageRequest request =
+                new CreateImageRequest(image.getEntity().getValue(),
+                        image.getImageInfo(), imageStream, GalleryType.ALL);
+
+        System.out.println("and here we...");
+        try {
+            Response response =
+                    (Response) dispatcher.executeSync(request, 1000);
+            if (!(response instanceof SuccessResponse)) {
+                System.out.println("failed to create image");
+            }
+        } catch (RequestException | TimeoutException e) {
+            e.printStackTrace();
+        }
+        System.out.println("...go!");
     }
 
     private void registerAdapters(Dispatcher dispatcher) {
         // StaticDataDelivery
-        ZmqAdapter sddAdapter = new ZmqAdapter(context, SDD_ENDPOINT);
-        dispatcher.registerServiceAdapter(SDD_SERVICE, sddAdapter);
-        dispatcher.setDefaultService(SddReadRequest.class, SDD_SERVICE);
-        dispatcher.setDefaultService(SddWriteRequest.class, SDD_SERVICE);
+        dispatcher.registerService(SddRequest.class, SDD_ENDPOINT);
 
         // UrlMapping
-        ZmqAdapter urlMappingAdapter =
-                new ZmqAdapter(context, URL_MAPPING_SERVER_ENDPOINT);
-        dispatcher.registerServiceAdapter(URL_MAPPING_SERVICE,
-                urlMappingAdapter);
-        dispatcher.setDefaultService(UrlMappingResolveRequest.class,
-                URL_MAPPING_SERVICE);
-        dispatcher.setDefaultService(UrlMappingRegistrationRequest.class,
-                URL_MAPPING_SERVICE);
+        dispatcher.registerService(UrlMappingRequest.class,
+                URL_MAPPING_SERVER_ENDPOINT);
+
+        // ImageGallery
+        dispatcher.registerService(GalleryServerRequest.class,
+                IMAGE_GALLERY_SERVER_ENDPOINT);
     }
 
-    private void load() throws ServiceOverloadedException {
-        //// Ensiferum /////////////////////////////////////////////////////////
+    private void load(int numEntities) throws ServiceOverloadedException,
+            FileNotFoundException {
+        String csvDir = "src/main/resources/";
 
-        Band ensiferum = new Band("Ensiferum");
-        Record ensiferum_ = new Record("Ensiferum", 2000, ensiferum);
-        Record fromAfar = new Record("From Afar", 2000, ensiferum);
-        Record iron = new Record("Iron", 2000, ensiferum);
-        Track heroInADream =
-                new Track("Hero in a Dream", 2, ensiferum, ensiferum_);
-        Track tokenOfTime =
-                new Track("Token of Time", 3, ensiferum, ensiferum_);
-        Track guardiansOfFate =
-                new Track("Guardians of Fate", 4, ensiferum, ensiferum_);
-        Track fromAfar_ = new Track("From Afar", 2, ensiferum, fromAfar);
-        Track twilightTavern =
-                new Track("Twilight Tavern", 3, ensiferum, fromAfar);
-        Track stoneColdMetal =
-                new Track("Stone Cold Metal", 6, ensiferum, fromAfar);
-        Track iron_ = new Track("Iron", 2, ensiferum, iron);
-        Track slayerOfLight = new Track("Slayer of Light", 7, ensiferum, iron);
-        Track intoBattle = new Track("Into Battle", 8, ensiferum, iron);
+        // load bands
+        bands = loadBands(csvDir + "Band.csv");
+        System.out.println(bands.size() + " bands imported");
 
-        ensiferum.addRecord(ensiferum_);
-        ensiferum.addRecord(fromAfar);
-        ensiferum.addRecord(iron);
+        // load records
+        records = loadRecords(csvDir + "Album.csv");
+        System.out.println(records.size() + " records imported");
 
-        ensiferum.addTrack(heroInADream);
-        ensiferum.addTrack(tokenOfTime);
-        ensiferum.addTrack(guardiansOfFate);
-        ensiferum.addTrack(fromAfar_);
-        ensiferum.addTrack(twilightTavern);
-        ensiferum.addTrack(stoneColdMetal);
-        ensiferum.addTrack(iron_);
-        ensiferum.addTrack(slayerOfLight);
-        ensiferum.addTrack(intoBattle);
+        // link records to bands
+        Set<Long> unusedRecords =
+                linkRecords(csvDir + "BandAlbum.csv", bands, records);
 
-        ensiferum_.addTrack(heroInADream);
-        ensiferum_.addTrack(tokenOfTime);
-        ensiferum_.addTrack(guardiansOfFate);
+        // remove unused records
+        removeUnusedRecords(unusedRecords);
+        System.out.println(records.size() + " records linked");
 
-        fromAfar.addTrack(twilightTavern);
-        fromAfar.addTrack(stoneColdMetal);
+        // load tracks
+        tracks = loadTracks(csvDir + "Track.csv");
+        System.out.println(tracks.size() + " tracks imported");
 
-        iron.addTrack(iron_);
-        iron.addTrack(slayerOfLight);
-        iron.addTrack(intoBattle);
+        // load discs
+        discs = loadDiscs(csvDir + "Disc.csv");
+        System.out.println(discs.size() + " discs imported");
 
-        store(ensiferum);
-        store(ensiferum_);
-        store(fromAfar);
-        store(iron);
-        store(heroInADream);
-        store(tokenOfTime);
-        store(guardiansOfFate);
-        store(fromAfar_);
-        store(twilightTavern);
-        store(stoneColdMetal);
-        store(iron_);
-        store(slayerOfLight);
-        store(intoBattle);
-        store(heroInADream);
-        store(tokenOfTime);
-        store(guardiansOfFate);
-        store(twilightTavern);
-        store(stoneColdMetal);
-        store(iron_);
-        store(slayerOfLight);
-        store(intoBattle);
+        // link tracks to records
+        Set<Long> unusedTracks = linkTracks(bands, records, discs, tracks);
 
-        //// Rammstein /////////////////////////////////////////////////////////
+        // remove unused tracks
+        removeUnusedTracks(unusedTracks);
+        System.out.println(tracks.size() + " tracks linked");
 
-        Band rammstein = new Band("Rammstein");
-        Record herzeleid = new Record("Herzeleid", 2000, rammstein);
-        Track wolltIhrDasBettInFlammenSehen =
-                new Track("Wollt ihr das Bett in Flammen sehen", 1, ensiferum,
-                        herzeleid);
-        Track derMeister = new Track("Der Meister", 2, ensiferum, herzeleid);
-        Track weissesFleisch =
-                new Track("Weisses Fleisch", 3, ensiferum, herzeleid);
-        Record sehnsucht = new Record("Sehnsucht", 2000, rammstein);
-        Track sehnsucht_ = new Track("Sehnsucht", 1, ensiferum, sehnsucht);
-        Track engel = new Track("Engel", 2, ensiferum, sehnsucht);
-        Track tier = new Track("Tier", 3, ensiferum, sehnsucht);
+        // load images
+        images = loadImages(csvDir + "Image.csv");
+        System.out.println(images.size() + " images imported");
 
-        rammstein.addRecord(herzeleid);
-        rammstein.addRecord(sehnsucht);
+        // link images
+        Set<Long> unusedImages = linkImages(bands, records, tracks, images);
 
-        rammstein.addTrack(wolltIhrDasBettInFlammenSehen);
-        rammstein.addTrack(derMeister);
-        rammstein.addTrack(weissesFleisch);
-        rammstein.addTrack(sehnsucht_);
-        rammstein.addTrack(engel);
-        rammstein.addTrack(tier);
-
-        herzeleid.addTrack(wolltIhrDasBettInFlammenSehen);
-        herzeleid.addTrack(derMeister);
-        herzeleid.addTrack(weissesFleisch);
-
-        sehnsucht.addTrack(sehnsucht_);
-        sehnsucht.addTrack(engel);
-        sehnsucht.addTrack(tier);
-
-        store(rammstein);
-        store(herzeleid);
-        store(sehnsucht);
-        store(wolltIhrDasBettInFlammenSehen);
-        store(derMeister);
-        store(weissesFleisch);
-        store(sehnsucht_);
-        store(engel);
-        store(tier);
-        store(wolltIhrDasBettInFlammenSehen);
-        store(derMeister);
-        store(weissesFleisch);
-        store(sehnsucht_);
-        store(engel);
-        store(tier);
-
-        //// Metallica /////////////////////////////////////////////////////////
-
-        Band metallica = new Band("Metallica");
-        Record killEmAll = new Record("Kill 'em All", 2000, metallica);
-        Track hitTheLights =
-                new Track("Hit the Lights", 1, ensiferum, killEmAll);
-        Track theFourHorsemen =
-                new Track("The Four Horsemen", 2, ensiferum, killEmAll);
-        Record rideTheLightning =
-                new Record("Ride the Lightning", 2000, metallica);
-        Track fightFireWithFire =
-                new Track("Fight Fire With Fire", 1, ensiferum,
-                        rideTheLightning);
-        Track rideTheLightning_ =
-                new Track("Ride the Lightning", 2, ensiferum, rideTheLightning);
-        Track forWhomTheBellTolls =
-                new Track("For Whom the Bell Tolls", 3, ensiferum,
-                        rideTheLightning);
-
-        metallica.addRecord(killEmAll);
-        metallica.addRecord(rideTheLightning);
-
-        metallica.addTrack(hitTheLights);
-        metallica.addTrack(theFourHorsemen);
-        metallica.addTrack(rideTheLightning_);
-        metallica.addTrack(fightFireWithFire);
-        metallica.addTrack(rideTheLightning_);
-        metallica.addTrack(forWhomTheBellTolls);
-
-        killEmAll.addTrack(hitTheLights);
-        killEmAll.addTrack(theFourHorsemen);
-
-        rideTheLightning.addTrack(fightFireWithFire);
-        rideTheLightning.addTrack(rideTheLightning_);
-        rideTheLightning.addTrack(forWhomTheBellTolls);
-
-        store(metallica);
-        store(killEmAll);
-        store(rideTheLightning);
-        store(hitTheLights);
-        store(theFourHorsemen);
-        store(rideTheLightning_);
-        store(fightFireWithFire);
-        store(rideTheLightning_);
-        store(forWhomTheBellTolls);
-        store(hitTheLights);
-        store(theFourHorsemen);
-        store(fightFireWithFire);
-        store(rideTheLightning_);
-        store(forWhomTheBellTolls);
+        // append filter
+        cutToNumEntities(numEntities);
+        System.out.println("cutted down to " + bands.size() + " bands,");
+        System.out.println(records.size() + " records,");
+        System.out.println(tracks.size() + " tracks");
     }
 
-    private void store(Band band) {
-        bands.put(band.getMuid(), band);
+    protected void removeUnusedRecords(Set<Long> unusedRecords) {
+        Record record;
+        for (Long recordId : unusedRecords) {
+            record = records.get(recordId);
+            records.remove(recordId);
+            //            System.out.println("r[" + record.getLegacyId() + "|"
+            //                    + record.getMuid() + "] \"" + record.getName()
+            //                    + "\" trashed");
+        }
+        //        unusedRecords.clear();
     }
 
-    private void store(Record record) {
-        records.put(record.getMuid(), record);
+    protected void removeUnusedTracks(Set<Long> unusedTracks) {
+        Track track;
+        for (Long trackId : unusedTracks) {
+            track = tracks.get(trackId);
+            tracks.remove(trackId);
+            //            System.out
+            //                    .println("t[" + track.getLegacyId() + "|" + track.getMuid()
+            //                            + "] \"" + track.getName() + "\" trashed");
+        }
+        //        unusedTracks.clear();
     }
 
-    private void store(Track track) {
-        tracks.put(track.getMuid(), track);
+    protected void cutToNumEntities(int numEntities) {
+        int crrEntities = 0;
+        List<Long> unusedBands = new LinkedList<Long>();
+        for (Band crrBand : bands.values()) {
+            if (++crrEntities > numEntities) {
+                unusedBands.add(crrBand.getLegacyId());
+
+                // remove children
+                for (Record crrRecord : crrBand.getRecords()) {
+                    records.remove(crrRecord.getLegacyId());
+                }
+                for (Track crrTrack : crrBand.getTracks()) {
+                    tracks.remove(crrTrack.getLegacyId());
+                }
+            }
+        }
+        for (Long unusedBandId : unusedBands) {
+            bands.remove(unusedBandId);
+        }
+    }
+
+    protected static Map<Long, Band> loadBands(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Band> bands = new HashMap<Long, Band>();
+        BandCsvParser bandParser = new BandCsvParser(filePath);
+        for (Band band : bandParser) {
+            bands.put(band.getLegacyId(), band);
+            //            System.out.println("b[" + band.getLegacyId() + "|" + band.getMuid()
+            //                    + "] " + band.getName());
+        }
+        return bands;
+    }
+
+    protected static Map<Long, Record> loadRecords(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Record> records = new HashMap<Long, Record>();
+        RecordCsvParser recordParser = new RecordCsvParser(filePath);
+        for (Record record : recordParser) {
+            records.put(record.getLegacyId(), record);
+            //            System.out.println("r[" + record.getLegacyId() + "|"
+            //                    + record.getMuid() + "] " + record.getName());
+        }
+        return records;
+    }
+
+    protected static Map<Long, Track> loadTracks(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Track> tracks = new HashMap<Long, Track>();
+        TrackCsvParser trackParser = new TrackCsvParser(filePath);
+        for (Track track : trackParser) {
+            tracks.put(track.getLegacyId(), track);
+            //            System.out.println("t[" + track.getLegacyId() + "|"
+            //                    + track.getMuid() + "] " + track.getName());
+        }
+        return tracks;
+    }
+
+    protected static Map<Long, Disc> loadDiscs(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Disc> discs = new HashMap<Long, Disc>();
+        DiscCsvParser discParser = new DiscCsvParser(filePath);
+        for (Disc disc : discParser) {
+            discs.put(disc.getLegacyId(), disc);
+            //            System.out.println("d[" + disc.getLegacyId() + "] "
+            //                    + disc.getTitle());
+        }
+        return discs;
+    }
+
+    protected static Map<Long, Image> loadImages(String filePath)
+            throws FileNotFoundException {
+        Map<Long, Image> images = new HashMap<Long, Image>();
+        ImageCsvParser imageParser = new ImageCsvParser(filePath);
+        for (Image image : imageParser) {
+            images.put(image.getLegacyId(), image);
+            //            System.out.println("i[" + image.getLegacyId() + "|"
+            //                    + image.getMuid() + "] " + image.getName());
+        }
+        return images;
+    }
+
+    protected static Set<Long> linkRecords(
+            String filePath,
+            Map<Long, Band> bands,
+            Map<Long, Record> records) throws FileNotFoundException {
+        Band band;
+        Record record;
+        Set<Long> unusedRecords = new LinkedHashSet<Long>(records.keySet());
+        BandAlbumCsvParser bandRecordParser = new BandAlbumCsvParser(filePath);
+        for (Entry<Long, List<Long>> relation : bandRecordParser) {
+            record = records.get(relation.getKey());
+            if (record == null) {
+                // sick relations waiting for the eXecuT0r
+                continue;
+            }
+
+            for (Long bandId : relation.getValue()) {
+                // add parental band
+                band = bands.get(bandId);
+                if (band == null) {
+                    throw new IllegalStateException("band null: " + bandId);
+                }
+
+                band.addRecord(record);
+                //              System.out.println(band.getMuid() + " -> " + record.getMuid());
+            }
+
+            unusedRecords.remove(record.getLegacyId());
+        }
+        return unusedRecords;
+    }
+
+    protected static Set<Long> linkTracks(
+            Map<Long, Band> bands,
+            Map<Long, Record> records,
+            Map<Long, Disc> discs,
+            Map<Long, Track> tracks) {
+        Record record;
+        Disc disc;
+        Track track;
+        Set<Long> unusedTracks = new LinkedHashSet<Long>(tracks.keySet());
+        for (Long trackId : tracks.keySet()) {
+            track = tracks.get(trackId);
+            disc = discs.get(track.getDiscId());
+
+            record = records.get(disc.getRecordId());
+            if (record == null) {
+                continue;
+            }
+
+            record.addTrack(track);
+            for (Band band : record.getBands()) {
+                band.addTrack(track);
+            }
+
+            unusedTracks.remove(trackId);
+        }
+        return unusedTracks;
+    }
+
+    protected static Set<Long> linkImages(
+            Map<Long, Band> bands,
+            Map<Long, Record> records,
+            Map<Long, Track> tracks,
+            Map<Long, Image> images) {
+        Set<Long> unusedImages = new LinkedHashSet<Long>();
+
+        Image image;
+
+        Band band;
+        for (Long bandId : bands.keySet()) {
+            band = bands.get(bandId);
+            image = images.get(band.getPhotoId());
+            //            System.out.println(image.getName() + "@" + band.getName());
+
+            image.setEntity(band.getMuid());
+        }
+
+        return unusedImages;
     }
 
 }

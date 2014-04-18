@@ -1,17 +1,21 @@
 <?xml version="1.0"?>
 <sdd-config>
-  <leveldb path="/usr/share/sdd/leveldb"/>
-  <neo4j path="/usr/share/sdd/neo4j"/>
+  <leveldb path="/usr/share/metalcon/staticDataDelivery/leveldb"/>
+  <neo4j path="/usr/share/metalcon/staticDataDelivery/neo4j"/>
   <transactions mode="single"/>
   
   <details>
     <detail name="entry"/>
     <detail name="page"/>
+    <detail name="tabBands"/>
+    <detail name="tabRecords"/>
+    <detail name="tabTracks"/>
   </details>
   
   <nodes>
     <node type="band">
       <property name="name" type="String"/>
+      <property name="urlMySpace" type="String"/>
       <relation name="records" type="record[]"/>
       <relation name="tracks" type="track[]"/>
 
@@ -24,11 +28,19 @@
         <out-relation relation="records" detail="entry"/>
         <out-relation relation="tracks" detail="entry"/>
       </output>
+      
+      <output detail="tabRecords">
+        <out-relation relation="records" detail="entry"/>
+      </output>
+      
+      <output detail="tabTracks">
+        <out-relation relation="tracks" detail="entry"/>
+      </output>
     </node>
 
     <node type="record">
       <property name="name" type="String"/>
-      <property name="releaseYear" type="String"/>
+      <property name="releaseDate" type="String"/>
       <relation name="band" type="band"/>
       <relation name="tracks" type="track[]"/>
 
@@ -43,11 +55,16 @@
         <out-relation relation="band" detail="entry"/>
         <out-relation relation="tracks" detail="entry"/>
       </output>
+      
+      <output detail="tabTracks">
+        <out-relation relation="tracks" detail="entry"/>
+      </output>
     </node>
     
     <node type="track">
       <property name="name" type="String"/>
       <property name="trackNumber" type="String"/>
+      <property name="duration" type="String"/>
       <relation name="band" type="band"/>
       <relation name="record" type="record"/>
 
