@@ -6,8 +6,10 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
@@ -19,10 +21,13 @@ public class MuidLoader {
 
     private Map<UidType, Map<Long, Muid>> muids;
 
+    private Set<Muid> realMuids;
+
     public MuidLoader(
             String filePath) throws IOException {
         this.filePath = filePath;
         muids = new HashMap<UidType, Map<Long, Muid>>();
+        realMuids = new LinkedHashSet<Muid>();
 
         File persFile = new File(filePath);
         if (!persFile.exists()) {
@@ -58,7 +63,12 @@ public class MuidLoader {
                         + "\" already registered for UID type \"" + uidType
                         + "\"");
             }
+            if (realMuids.contains(muid)) {
+                throw new IllegalStateException("MUID \"" + muid
+                        + "\" already taken");
+            }
             muidsForUidType.put(legacyId, muid);
+            realMuids.add(muid);
         }
     }
 

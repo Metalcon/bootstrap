@@ -52,8 +52,7 @@ public class Bootstrap {
 
     public static final String URL_MAPPING_SERVER_ENDPOINT = SERVER + "12666";
 
-    public static final String IMAGE_GALLERY_SERVER_ENDPOINT =
-            "tcp://141.26.71.88:12669";
+    public static final String IMAGE_GALLERY_SERVER_ENDPOINT = SERVER + "12669";
 
     private static final File IMAGE_DIR = new File(
             "/media/ubuntu-prog/metalcon-images/images");
@@ -113,11 +112,12 @@ public class Bootstrap {
         registerAdapters(dispatcher);
 
         Band testy = null;
+        Image image;
 
-        boolean importBands = false;
+        boolean importBands = true;
         boolean importRecords = false;
         boolean importTracks = false;
-        boolean importImages = false;
+        boolean importImages = true;
 
         if (importBands) {
             for (Band band : bands.values()) {
@@ -133,6 +133,13 @@ public class Bootstrap {
                 }
 
                 importEntity(band);
+                if (importImages) {
+                    image = images.get(band.getPhotoId());
+                    if (image != null) {
+                        importImage(image);
+                        images.remove(image);
+                    }
+                }
             }
         }
 
@@ -153,14 +160,6 @@ public class Bootstrap {
                     System.out.println("track: \"" + track.getName() + "\"");
                 }
                 importEntity(track);
-            }
-        }
-
-        if (importImages) {
-            for (Image image : images.values()) {
-                if (image.getEntity() != null) {
-                    importImage(image);
-                }
             }
         }
 
