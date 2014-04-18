@@ -21,11 +21,10 @@ if $SDD_ENABLED; then
   fi
   
   pushd $SDD_PATH
-  if ! ./install.sh
-  then
-    exit 1
-  fi
+  ./install.sh || exit 1
   popd > /dev/null
+
+echo adslkfjdsaj
 fi
 
 # install URL mapping server
@@ -39,10 +38,7 @@ if $UMS_ENABLED; then
   fi
 
   pushd $UMS_PATH
-  if ! ./install.sh
-  then
-    exit 1
-  fi
+  ./install.sh || exit 1
   popd > /dev/null
 fi
 
@@ -57,10 +53,7 @@ if $IGS_ENABLED; then
   fi
   
   pushd $IGS_PATH
-  if ! ./install.sh
-  then
-    exit 1
-  fi
+  ./install.sh || exit 1
   popd > /dev/null
 fi
 
@@ -75,10 +68,7 @@ if $LIKE_ENABLED; then
   fi
 
   pushd $LIKE_PATH
-  if ! ./install.sh
-  then
-    exit 1
-  fi
+  ./install.sh || exit 1
   popd > /dev/null
 fi
 
@@ -92,10 +82,7 @@ then
   fi
 
 pushd $UID_PATH
-if ! ./install.sh
-then
-  exit 1
-fi
+./install.sh || exit 1
 popd > /dev/null
 
 echo "directory for log files is \"$LOG_DIR\""
