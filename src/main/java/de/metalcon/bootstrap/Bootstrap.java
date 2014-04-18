@@ -83,7 +83,7 @@ public class Bootstrap {
         Entity.setMuidLoader(muidLoader);
 
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.load(100000);
+        bootstrap.load(1000);
         bootstrap.run();
 
         //        MetalconFreebaseRequest mfr = new MetalconFreebaseRequest();
@@ -130,9 +130,9 @@ public class Bootstrap {
         Image image;
 
         boolean importBands = true;
-        boolean importRecords = false;
-        boolean importTracks = false;
-        boolean importImages = true;
+        boolean importRecords = true;
+        boolean importTracks = true;
+        boolean importImages = false;
 
         if (importBands) {
             for (Band band : bands.values()) {

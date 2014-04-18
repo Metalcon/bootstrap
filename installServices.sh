@@ -24,7 +24,6 @@ if $SDD_ENABLED; then
   ./install.sh || exit 1
   popd > /dev/null
 
-echo adslkfjdsaj
 fi
 
 # install URL mapping server
