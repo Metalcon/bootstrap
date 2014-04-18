@@ -114,10 +114,10 @@ public class Bootstrap {
 
         Band testy = null;
 
-        boolean importBands = false;
+        boolean importBands = true;
         boolean importRecords = false;
         boolean importTracks = false;
-        boolean importImages = true;
+        boolean importImages = false;
 
         if (importBands) {
             for (Band band : bands.values()) {
@@ -227,9 +227,9 @@ public class Bootstrap {
             @Override
             public void onSuccess(Response response) {
                 if (response instanceof SuccessResponse) {
-                    //                    System.out.println("Url registration worked. ("
-                    //                            + entity.getClass().getSimpleName() + ":"
-                    //                            + entity.getName() + ")" + entity.getMuid());
+                    System.out.println("Url registration worked. ("
+                            + browsable.getClass().getSimpleName() + ":"
+                            + browsable.getName() + ")");
                 } else {
                     System.out.println("Url registration failed. ("
                             + browsable.getClass().getSimpleName() + ":"
