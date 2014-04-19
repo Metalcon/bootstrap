@@ -79,5 +79,12 @@
         <artifactId>YoutubeServer</artifactId>
         <version>${metalcon.youtubeServerAPI.version}</version>
     </dependency> 
+     <dependency>
+        <groupId>de.metalcon</groupId>
+        <artifactId>recommendation-server</artifactId>
+        <version>0.0.1</version>
+    </dependency> 
+    
+    
   </dependencies> 
 </project>

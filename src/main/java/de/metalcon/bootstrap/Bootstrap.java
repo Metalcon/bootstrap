@@ -25,9 +25,11 @@ import de.metalcon.bootstrap.domain.Entity;
 import de.metalcon.bootstrap.domain.Image;
 import de.metalcon.bootstrap.domain.UrlImportable;
 import de.metalcon.bootstrap.domain.entities.Band;
+import de.metalcon.bootstrap.domain.entities.Recommendation;
 import de.metalcon.bootstrap.domain.entities.Record;
 import de.metalcon.bootstrap.domain.entities.Track;
 import de.metalcon.bootstrap.parsers.BandAlbumCsvParser;
+import de.metalcon.bootstrap.parsers.BandBandNewSimilarCsvParser;
 import de.metalcon.bootstrap.parsers.BandCsvParser;
 import de.metalcon.bootstrap.parsers.DiscCsvParser;
 import de.metalcon.bootstrap.parsers.ImageCsvParser;
@@ -37,6 +39,7 @@ import de.metalcon.exceptions.ServiceOverloadedException;
 import de.metalcon.imageGalleryServer.api.GalleryType;
 import de.metalcon.imageGalleryServer.api.requests.CreateImageRequest;
 import de.metalcon.imageGalleryServer.api.requests.GalleryServerRequest;
+import de.metalcon.recommendation.api.requests.RegisterRecommendationRequest;
 import de.metalcon.sdd.api.requests.SddRequest;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
 import de.metalcon.sdd.api.responses.SddResponse;
@@ -53,6 +56,8 @@ public class Bootstrap {
     public static final String URL_MAPPING_SERVER_ENDPOINT = SERVER + "12666";
 
     public static final String IMAGE_GALLERY_SERVER_ENDPOINT = SERVER + "12669";
+
+    public static final String RECOMMENDATION_SERVER_ENDPOINT = SERVER + "8712";
 
     private static final File IMAGE_DIR = new File(
             "/media/ubuntu-prog/metalcon-images/images");
@@ -77,13 +82,15 @@ public class Bootstrap {
 
     private int numActionsSddRequest;
 
+    private BandBandNewSimilarCsvParser recommendations;
+
     public static void main(String[] args) throws ServiceOverloadedException,
             InterruptedException, IOException {
         MuidLoader muidLoader = new MuidLoader("muids.csv");
         Entity.setMuidLoader(muidLoader);
 
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.load(1000);
+        bootstrap.load(100000);
         bootstrap.run();
 
         //        MetalconFreebaseRequest mfr = new MetalconFreebaseRequest();
@@ -129,10 +136,11 @@ public class Bootstrap {
         Band testy = null;
         Image image;
 
-        boolean importBands = true;
-        boolean importRecords = true;
-        boolean importTracks = true;
+        boolean importBands = false;
+        boolean importRecords = false;
+        boolean importTracks = false;
         boolean importImages = false;
+        boolean importRecommendations = true;
 
         if (importBands) {
             for (Band band : bands.values()) {
@@ -177,12 +185,25 @@ public class Bootstrap {
                 importEntity(track);
             }
         }
+        if (importRecommendations) {
+            for (Recommendation rec : recommendations) {
+                importRecommendation(rec);
+            }
+        }
 
         dispatcher.gatherResults(1000);
         System.out.println("results gathered");
 
         System.out.println("done.");
         dispatcher.shutdown();
+    }
+
+    private void importRecommendation(Recommendation rec) {
+        RegisterRecommendationRequest recommendationRequest =
+                new RegisterRecommendationRequest(rec.getFrom(), rec.getTo(),
+                        rec.getScore());
+        dispatcher.executeSync(recommendationRequest);
+
     }
 
     protected void importEntity(Entity entity) {
@@ -308,6 +329,10 @@ public class Bootstrap {
         // ImageGallery
         dispatcher.registerService(GalleryServerRequest.class,
                 IMAGE_GALLERY_SERVER_ENDPOINT);
+
+        // Recommendations band band new similar
+        dispatcher.registerService(RegisterRecommendationRequest.class,
+                RECOMMENDATION_SERVER_ENDPOINT);
     }
 
     private void load(int numEntities) throws ServiceOverloadedException,
@@ -351,6 +376,11 @@ public class Bootstrap {
 
         // link images
         Set<Long> unusedImages = linkImages(bands, records, tracks, images);
+
+        // recommendations band band new similar
+        recommendations =
+                loadRecommendations(csvDir + "BandBandNewSimilar.csv");
+        System.out.println(" recommendations loaded");
 
         // append filter
         cutToNumEntities(numEntities);
@@ -462,6 +492,20 @@ public class Bootstrap {
             //                    + image.getMuid() + "] " + image.getName());
         }
         return images;
+    }
+
+    /**
+     * parses bandbandnewsimilar.csv for recommendations
+     * 
+     * @param filePath
+     * @return
+     * @throws FileNotFoundException
+     */
+    protected static BandBandNewSimilarCsvParser loadRecommendations(
+            String filePath) throws FileNotFoundException {
+        BandBandNewSimilarCsvParser recommendations =
+                new BandBandNewSimilarCsvParser(filePath);
+        return recommendations;
     }
 
     protected static Set<Long> linkRecords(
