@@ -1,6 +1,5 @@
 package de.metalcon.bootstrap.domain.entities;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +17,12 @@ public class Band extends Entity {
 
     protected String urlMySpace;
 
+    protected String urlWebsite;
+
+    protected String description;
+
+    protected int numFans;
+
     private List<Record> records = new LinkedList<Record>();
 
     private List<Track> tracks = new LinkedList<Track>();
@@ -26,18 +31,20 @@ public class Band extends Entity {
             long legacyId,
             String name,
             long photoId,
-            String urlMySpace) {
+            String urlMySpace,
+            String urlWebsite,
+            String description,
+            int numFans) {
         super(legacyId, UidType.BAND, name);
         this.photoId = photoId;
         this.urlMySpace = urlMySpace;
+        this.urlWebsite = urlWebsite;
+        this.description = description;
+        this.numFans = numFans;
     }
 
     public long getPhotoId() {
         return photoId;
-    }
-
-    public String getUrlMySpace() {
-        return urlMySpace;
     }
 
     public List<Record> getRecords() {
@@ -57,36 +64,46 @@ public class Band extends Entity {
         tracks.add(track);
     }
 
+    public int getNumFans() {
+        return numFans;
+    }
+
     @Override
     public void fillSddWriteRequest(SddWriteRequest request) {
-        Map<String, String> properties = new HashMap<String, String>();
-        properties.put("name", getName());
-        if (getUrlMySpace() != null) {
-            properties.put("urlMySpace", getUrlMySpace());
+        Map<String, String> properties = super.getProperties();
+
+        if (urlMySpace != null) {
+            properties.put("urlMySpace", urlMySpace);
         }
+        if (urlWebsite != null) {
+            properties.put("urlWebsite", urlWebsite);
+        }
+        if (description != null) {
+            properties.put("description", description);
+        }
+
+        request.setProperties(muid, properties);
 
         List<Muid> recordMuids = new LinkedList<Muid>();
         for (Record record : records) {
             recordMuids.add(record.getMuid());
+        }
+        if (recordMuids.size() > 0) {
+            request.setRelations(muid, "records", recordMuids);
         }
 
         List<Muid> trackMuids = new LinkedList<Muid>();
         for (Track track : tracks) {
             trackMuids.add(track.getMuid());
         }
-
-        request.setProperties(getMuid(), properties);
-        if (recordMuids.size() > 0) {
-            request.setRelations(getMuid(), "records", recordMuids);
-        }
         if (trackMuids.size() > 0) {
-            request.setRelations(getMuid(), "tracks", trackMuids);
+            request.setRelations(muid, "tracks", trackMuids);
         }
     }
 
     @Override
     public EntityUrlData getUrlData() {
-        return new BandUrlData(getMuid(), getName());
+        return new BandUrlData(muid, name);
     }
 
 }

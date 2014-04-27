@@ -23,6 +23,9 @@ public class BandCsvParser extends CsvParser<Band> {
         String name;
         long photoId;
         String urlMySpace;
+        String urlWebsite;
+        String description;
+        int numFans;
 
         reader.readLine();
         while ((band = getEntry()) != null) {
@@ -37,7 +40,9 @@ public class BandCsvParser extends CsvParser<Band> {
             // [4] MyspaceURL*
             urlMySpace = readSafely(band[4]);
             // [5] WebsiteURL*
+            urlWebsite = readSafely(band[5]);
             // [6] Description*
+            description = readSafely(band[6]);
             // [7] City_ID*
             // [8] Active
             // [9] MaintainerUser_ID*
@@ -50,8 +55,10 @@ public class BandCsvParser extends CsvParser<Band> {
             // [16]UserEditingTime*
             // [17]Logo_ID*
             // [18]UserCount
+            numFans = Integer.valueOf(band[18]);
 
-            bands.add(new Band(legacyId, name, photoId, urlMySpace));
+            bands.add(new Band(legacyId, name, photoId, urlMySpace, urlWebsite,
+                    description, numFans));
         }
 
         return bands;

@@ -2,7 +2,6 @@ package de.metalcon.bootstrap.domain.entities;
 
 import java.util.Calendar;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -19,15 +18,15 @@ public class Record extends Entity {
 
     protected static final Calendar CALENDAR = Calendar.getInstance();
 
-    private Date releaseDate;
+    protected Date releaseDate;
 
-    private long coverId;
+    protected long coverId;
 
-    private int numFans;
+    protected int numFans;
 
-    private List<Band> bands = new LinkedList<Band>();
+    protected List<Band> bands = new LinkedList<Band>();
 
-    private List<Track> tracks = new LinkedList<Track>();
+    protected List<Track> tracks = new LinkedList<Track>();
 
     public Record(
             long legacyId,
@@ -39,14 +38,6 @@ public class Record extends Entity {
         this.releaseDate = releaseDate;
         this.coverId = coverId;
         this.numFans = numFans;
-    }
-
-    public int getNumFans() {
-        return numFans;
-    }
-
-    public Date getReleaseDate() {
-        return releaseDate;
     }
 
     public long getCoverId() {
@@ -70,24 +61,31 @@ public class Record extends Entity {
         track.setRecord(this);
     }
 
+    public int getNumFans() {
+        return numFans;
+    }
+
     @Override
     public void fillSddWriteRequest(SddWriteRequest request) {
-        Map<String, String> properties = new HashMap<String, String>();
-        properties.put("name", getName());
-        if (getReleaseDate() != null) {
-            properties.put("releaseDate", String.valueOf(getReleaseDate()));
+        Map<String, String> properties = super.getProperties();
+
+        if (releaseDate != null) {
+            properties.put("releaseDate", String.valueOf(releaseDate));
         }
+
+        request.setProperties(getMuid(), properties);
+
+        List<Muid> bandMuids = new LinkedList<Muid>();
+        for (Band band : bands) {
+            bandMuids.add(band.getMuid());
+        }
+        request.setRelations(muid, "bands", bandMuids);
 
         List<Muid> trackMuids = new LinkedList<Muid>();
         for (Track track : tracks) {
             trackMuids.add(track.getMuid());
         }
-
-        request.setProperties(getMuid(), properties);
-        // TODO use multiple bands for SDD
-        request.setRelation(getMuid(), "band", bands.iterator().next()
-                .getMuid());
-        request.setRelations(getMuid(), "tracks", trackMuids);
+        request.setRelations(muid, "tracks", trackMuids);
     }
 
     @Override
@@ -102,7 +100,7 @@ public class Record extends Entity {
             releaseYear = CALENDAR.get(Calendar.YEAR);
         }
 
-        return new RecordUrlData(getMuid(), getName(), bandUrlData, releaseYear);
+        return new RecordUrlData(muid, name, bandUrlData, releaseYear);
     }
 
 }

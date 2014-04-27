@@ -1,9 +1,11 @@
 package de.metalcon.bootstrap.domain.entities;
 
-import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import de.metalcon.bootstrap.domain.Entity;
+import de.metalcon.domain.Muid;
 import de.metalcon.domain.UidType;
 import de.metalcon.sdd.api.requests.SddWriteRequest;
 import de.metalcon.urlmappingserver.api.requests.registration.EntityUrlData;
@@ -54,16 +56,20 @@ public class Track extends Entity {
 
     @Override
     public void fillSddWriteRequest(SddWriteRequest request) {
-        Map<String, String> properties = new HashMap<String, String>();
-        properties.put("name", getName());
+        Map<String, String> properties = super.getProperties();
+
         properties.put("trackNumber", String.valueOf(trackNumber));
         properties.put("duration", String.valueOf(duration));
 
-        request.setProperties(getMuid(), properties);
-        // TODO use multiple bands
-        request.setRelation(getMuid(), "band", record.getBands().iterator()
-                .next().getMuid());
-        request.setRelation(getMuid(), "record", record.getMuid());
+        request.setProperties(muid, properties);
+
+        List<Muid> bandMuids = new LinkedList<Muid>();
+        for (Band band : record.getBands()) {
+            bandMuids.add(band.getMuid());
+        }
+        request.setRelations(muid, "bands", bandMuids);
+
+        request.setRelation(muid, "record", record.getMuid());
     }
 
     @Override

@@ -77,6 +77,8 @@ public class Bootstrap {
 
     private int numActionsSddRequest;
 
+    private int numMaxActionsSdd;
+
     public static void main(String[] args) throws ServiceOverloadedException,
             InterruptedException, IOException {
         MuidLoader muidLoader = new MuidLoader("muids.csv");
@@ -119,6 +121,7 @@ public class Bootstrap {
         numRequests = 0;
         maxRequests = 500;
         numActionsSddRequest = 0;
+        numMaxActionsSdd = 1000;
     }
 
     private void run() throws ServiceOverloadedException, InterruptedException,
@@ -189,18 +192,16 @@ public class Bootstrap {
         if (request == null) {
             request = new SddWriteRequest();
         }
-
         registerUrl(entity);
         entity.fillSddWriteRequest(request);
-        numActionsSddRequest += 1;
 
-        // TODO if
-        importToStaticData(request);
-        request = new SddWriteRequest();
-        numActionsSddRequest = 0;
-        numRequests += 1;
+        if (++numActionsSddRequest >= numMaxActionsSdd) {
+            numActionsSddRequest = 0;
+            importToStaticData(request);
+            request = new SddWriteRequest();
+        }
 
-        if (numRequests >= maxRequests) {
+        if (++numRequests >= maxRequests) {
             numRequests = 0;
             dispatcher.gatherResults(5000);
             System.out.println("results gathered");
@@ -211,11 +212,6 @@ public class Bootstrap {
         dispatcher.execute(request, new Callback<SddResponse>() {
 
             @Override
-            public void onError(RequestException exception) {
-                exception.printStackTrace();
-            }
-
-            @Override
             public void onSuccess(SddResponse response) {
                 if (response instanceof SddSucessfullQueueResponse) {
                     //                            System.out.println("Queing data worked");
@@ -223,6 +219,12 @@ public class Bootstrap {
                     System.out.println("Queing data failed: "
                             + response.getClass());
                 }
+            }
+
+            @Override
+            public void onError(RequestException exception) {
+                exception.printStackTrace();
+                throw new IllegalStateException("error in static data delivery");
             }
 
             @Override
@@ -261,6 +263,7 @@ public class Bootstrap {
             @Override
             public void onError(RequestException e) {
                 e.printStackTrace();
+                throw new IllegalStateException("error in URL mapping server");
             }
 
             @Override
